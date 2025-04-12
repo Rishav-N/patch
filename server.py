@@ -21,7 +21,6 @@ def predict():
     if 'file' not in request.files:
         return jsonify({'error': 'No file uploaded'}), 400
 
-    #so
     file = request.files['file']
     filepath = os.path.join(UPLOAD_FOLDER, file.filename)
     file.save(filepath)
