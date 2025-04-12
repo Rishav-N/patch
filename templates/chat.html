@@ -1,0 +1,70 @@
+<!-- templates/chat.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Simple Chat App</title>
+  <!-- Include the Socket.IO client library from a CDN -->
+  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js" integrity="sha384-...your_integrity_hash..." crossorigin="anonymous"></script>
+  <style>
+    /* Basic styling for the chat interface */
+    #chat-window {
+      width: 100%;
+      height: 300px;
+      border: 1px solid #ccc;
+      overflow-y: scroll;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    #message-input {
+      width: 75%;
+      padding: 10px;
+      font-size: 1em;
+    }
+    #send-button {
+      width: 20%;
+      padding: 10px;
+      font-size: 1em;
+    }
+  </style>
+</head>
+<body>
+  <div id="chat-window"></div>
+
+  <input type="text" id="message-input" placeholder="Type your message here">
+  <button id="send-button">Send</button>
+
+  <script>
+    // Connect to the Socket.IO server; this assumes your Flask server is serving the Socket.IO endpoint.
+    // The location parameters will automatically reference your current domain and port.
+    var socket = io();
+    console.log("Socket.IO client script loaded");
+
+    // Optionally, you can assign a username or room if you want to support multiple users/chats.
+    var username = "User" + Math.floor(Math.random() * 1000); // Example random username
+    var room = "general"; // Example room name
+
+    // Emit a 'join' event if you're supporting multiple rooms
+    socket.emit('join', { username: username, room: room });
+
+    // Send a message when the "Send" button is clicked
+    document.getElementById('send-button').onclick = function () {
+      var message = document.getElementById('message-input').value;
+      if(message.trim() !== "") {
+        socket.emit('message', { username: username, room: room, msg: message });
+        document.getElementById('message-input').value = "";
+      }
+    };
+
+    // Listen for 'message' events from the server
+    socket.on('message', function(data) {
+      // Get the chat window and append a new paragraph for the message
+      var chatWindow = document.getElementById('chat-window');
+      var messageElement = document.createElement('p');
+      messageElement.innerHTML = "<strong>" + data.username + ":</strong> " + data.msg;
+      chatWindow.appendChild(messageElement);
+      // Optional: Scroll to the bottom when a new message appears
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+    });
+  </script>
+</body>
+</html>
