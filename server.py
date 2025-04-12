@@ -1,3 +1,4 @@
+#server.py
 from flask import Flask, request, jsonify
 from tensorflow.keras.models import load_model
 from tensorflow.keras.applications.mobilenet import preprocess_input, decode_predictions
