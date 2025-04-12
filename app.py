@@ -1,6 +1,13 @@
 # app.py
 from flask import Flask, render_template, request, redirect, url_for, session
 from flask_socketio import SocketIO, join_room, emit
+import firebase_admin
+from firebase_admin import credentials, auth, firestore
+
+cred = credentials.Certificate('firebase_key.json')
+firebase_admin.initialize_app(cred)
+
+db = firestore.client()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
@@ -26,6 +33,30 @@ issues = [
     # Add more issues here for testing
 ]
 
+# App routes
+@app.route('/signup', methods=['GET', 'POST'])
+def signup():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        role = request.form['role']
+
+        try:
+            user = auth.create_user(email=email, password=password)
+
+            db.collection('users').document(user.uid).set({
+                'email': email,
+                'role': role,
+            })
+
+            return redirect(url_for('login'))
+
+        except Exception as e:
+            return f"Error creating user: {e}"
+
+    return render_template('signup.html')
+
+
 @app.route('/')
 def home():
     return render_template('index.html')
@@ -34,18 +65,31 @@ def home():
 def chat():
     return render_template('chat.html')
 
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form['username']
+        email = request.form['email']
         role = request.form['role']
-        session['username'] = username
-        session['role'] = role
 
-        if role == 'tenant':
-            return redirect(url_for('tenant_dashboard'))
-        else:
-            return redirect(url_for('landlord_dashboard'))
+        # Get user by email
+        try:
+            user = auth.get_user_by_email(email)
+            user_data = db.collection('users').document(user.uid).get().to_dict()
+
+            if user_data['role'] != role:
+                return "Incorrect role selected"
+
+            session['username'] = email
+            session['role'] = role
+
+            if role == 'tenant':
+                return redirect(url_for('tenant_dashboard'))
+            else:
+                return redirect(url_for('landlord_dashboard'))
+
+        except Exception as e:
+            return f"Login failed: {e}"
 
     return render_template('login.html')
 
