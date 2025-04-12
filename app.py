@@ -6,6 +6,26 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
 socketio = SocketIO(app)
 
+issues = [
+    {
+        'id': 1,
+        'title': 'Mold on ceiling',
+        'description': 'Been here for 2 weeks',
+        'tenant': 'tenant1',
+        'landlord': 'landlord1',
+        'status': 'Pending'
+    },
+    {
+        'id': 2,
+        'title': 'Water leak in kitchen',
+        'description': 'Leak under sink',
+        'tenant': 'tenant2',
+        'landlord': 'landlord1',
+        'status': 'Pending'
+    },
+    # Add more issues here for testing
+]
+
 @app.route('/')
 def home():
     return render_template('index.html')
@@ -50,6 +70,8 @@ def landlord_dashboard():
 def logout():
     session.clear()
     return redirect(url_for('login'))
+
+@app.route
 
 
 @socketio.on('join')

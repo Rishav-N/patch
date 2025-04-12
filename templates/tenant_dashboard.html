@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Your Submitted Issues</h2>
+
+{% for issue in issues %}
+    <div>
+        <strong>{{ issue.title }}</strong><br>
+        {{ issue.description }}<br>
+        Status: {{ issue.status }}
+    </div>
+{% endfor %}
+
+<a href="/logout">Logout</a>
+{% endblock %}
