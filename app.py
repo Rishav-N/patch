@@ -3,6 +3,9 @@ from flask import Flask, render_template, request, redirect, url_for, session
 from flask_socketio import SocketIO, join_room, emit
 import firebase_admin
 from firebase_admin import credentials, auth, firestore
+import requests
+from flask import jsonify
+
 
 cred = credentials.Certificate('firebase_key.json')
 firebase_admin.initialize_app(cred)
@@ -55,6 +58,39 @@ def signup():
             return f"Error creating user: {e}"
 
     return render_template('signup.html')
+
+#add routes that listens for POST requests at /upload-image. 
+#returns in an JSON format
+@app.route('/upload-image', methods=['POST'])
+def upload_image():
+    # Check if the POST request actually includes a file
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file uploaded'}), 400
+    file = request.files['file']
+
+    # The URL of the model server that will predict the result
+    model_server_url = 'http://localhost:5000/predict'  # Your model server URL
+    try:
+        # Send the uploaded file to the model server
+        response = requests.post(
+            model_server_url,
+            files={'file': (file.filename, file.stream, file.mimetype)}
+        )
+
+        # If the model server responded successfully (HTTP 200 OK)
+        if response.status_code == 200:
+            # Parse prediction from model server
+            prediction = response.json()
+            label = prediction.get('label')
+            confidence = prediction.get('confidence')
+
+            # Return the prediction result to the user in a nice format
+            return jsonify({'analysis': f"{label} ({confidence:.2f} confidence)"})
+        else:
+            return jsonify({'error': 'Failed to get prediction'}), 500
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/')
