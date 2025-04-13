@@ -16,7 +16,7 @@ load_dotenv()
 openai.api_key = os.getenv('OPENAI_API_KEY')
 
 # Initialize Firebase Admin SDK with your service account key.
-cred = credentials.Certificate('patch-40246-firebase-adminsdk-fbsvc-76101ed4f9.json')
+cred = credentials.Certificate('firebase_key.json')
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
