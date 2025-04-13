@@ -5,7 +5,7 @@ from email.mime.text import MIMEText
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_socketio import SocketIO, join_room, emit
 import firebase_admin
-from firebase_admin import credentials, firestore, auth
+from firebase_admin import credentials, auth, firestore
 
 # Initialize Firebase Admin SDK with your service account key.
 cred = credentials.Certificate('patch-40246-firebase-adminsdk-fbsvc-75e8c8f76f.json')
@@ -58,10 +58,22 @@ def signup():
                 'email': email,
                 'role': role,
             })
+
             return redirect(url_for('login'))
+
         except Exception as e:
             return f"Error creating user: {e}"
     return render_template('signup.html')
+
+
+@app.route('/')
+def home():
+    return render_template('index.html')
+
+@app.route('/chat')
+def chat():
+    return render_template('chat.html')
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
