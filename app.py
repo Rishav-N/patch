@@ -7,21 +7,17 @@ import openai
 import boto3
 from dotenv import load_dotenv
 from email.mime.text import MIMEText
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_socketio import SocketIO, join_room, emit
 import firebase_admin
 from firebase_admin import credentials, firestore
-
-# Load environment variables
-load_dotenv()
-openai.api_key = os.getenv('OPENAI_API_KEY')
 
 # Initialize Firebase Admin SDK with your service account key.
 cred = credentials.Certificate('firebase_key.json')
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static')
 app.config['SECRET_KEY'] = 'your_secret_key'
 socketio = SocketIO(app)
 

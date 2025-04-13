@@ -1,0 +1,89 @@
+/* Base Reset + Clean Layout */
+
+body {
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f8f9fa;
+    color: #212529;
+}
+
+h1, h2, h3, h4, h5 {
+    font-weight: 700;
+}
+
+a {
+    color: #4f46e5;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Card Styling */
+
+.card {
+    border: none;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+}
+
+/* Buttons */
+
+.btn-primary {
+    background-color: #4f46e5;
+    border-color: #4f46e5;
+}
+
+.btn-primary:hover {
+    background-color: #4338ca;
+    border-color: #4338ca;
+}
+
+.btn-outline-secondary:hover {
+    color: #fff;
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+
+/* Input Styling */
+
+input, select, textarea {
+    border-radius: 0.5rem !important;
+}
+
+input:focus, select:focus, textarea:focus {
+    box-shadow: none;
+    border-color: #4f46e5;
+}
+
+/* Chat Window Styling */
+
+#chat-window {
+    background-color: #f1f3f5;
+    border-radius: 0.5rem;
+    padding: 1rem;
+}
+
+/* Image Preview Styling */
+
+#image-preview {
+    border-radius: 0.5rem;
+    border: 1px solid #ddd;
+    padding: 5px;
+    background-color: #fff;
+}
+
+/* Split Screen Login Background */
+
+.right-section {
+    background-image: url('/static/img/login-bg.png');
+    background-size: cover;          /* Cover ensures full space fill */
+    background-position: center;     /* Center the image */
+    background-repeat: no-repeat;    /* Prevent tiling */
+    height: 100vh;                   /* Full viewport height */
+    width: 100%;                     /* Full width of its container */
+}
+
+
+
+
