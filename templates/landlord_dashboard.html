@@ -2,72 +2,130 @@
 {% block title %}Landlord Dashboard{% endblock %}
 
 {% block content %}
-  <h2>Welcome, Landlord</h2>
-  
+<div class="container">
+  <h2 class="mb-4">Welcome, Landlord</h2>
+
   <!-- Send Request Form -->
-  <form action="{{ url_for('landlord.send_request') }}" method="POST" class="mb-4">
-    <div class="form-group">
-      <label for="tenant_email">Tenant Email</label>
-      <input type="email" class="form-control" id="tenant_email" name="tenant_email" placeholder="Enter tenant email" required>
+  <div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0">Send Request to Tenant</h5>
     </div>
-    <button type="submit" class="btn btn-primary">Send Request</button>
-  </form>
+    <div class="card-body">
+      <form action="{{ url_for('landlord.send_request') }}" method="POST">
+        <div class="form-group">
+          <label for="tenant_email">Tenant Email</label>
+          <input type="email" class="form-control" id="tenant_email" name="tenant_email" 
+                 placeholder="Enter tenant email" required>
+        </div>
+        <button type="submit" class="btn btn-success mt-2">Send Request</button>
+      </form>
+    </div>
+  </div>
 
-  <!-- Tenants List Section -->
-  <h3>Attached Tenants</h3>
-  {% if tenants %}
-    <ul class="list-group mb-4">
-      {% for tenant in tenants %}
-        <li class="list-group-item">
-          <strong>Email:</strong> {{ tenant.email }}
-          <!-- Additional details about the tenant can be added here -->
-        </li>
-      {% endfor %}
-    </ul>
+  <!-- Attached Tenants List (like old code) -->
+  <div class="card mb-4">
+    <div class="card-header bg-secondary text-white">
+      <h5 class="mb-0">Attached Tenants</h5>
+    </div>
+    <div class="card-body">
+      {% if tenants %}
+        <ul class="list-group list-group-flush">
+          {% for tenant in tenants %}
+          <li class="list-group-item">
+            <strong>Email:</strong> {{ tenant.email }}
+          </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-muted">No tenants are attached yet.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Select Tenant Dropdown -->
+  <div class="card mb-4">
+    <div class="card-header bg-info text-white">
+      <h5 class="mb-0">View Tenant Issues</h5>
+    </div>
+    <div class="card-body">
+      <form method="GET" action="{{ url_for('landlord.dashboard_landlord') }}">
+        <div class="form-group">
+          <label for="selected_tenant">Select Tenant</label>
+          <select class="form-control" id="selected_tenant" name="tenant_email" onchange="this.form.submit()">
+            <option value="">-- Select Tenant --</option>
+            {% for tenant in tenants %}
+              <option value="{{ tenant.email }}" 
+                {% if tenant.email == selected_tenant_email %}selected{% endif %}>
+                {{ tenant.email }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {% if selected_tenant_email %}
+    <!-- Pending Issues for Selected Tenant -->
+    <div class="card mb-4">
+      <div class="card-header bg-warning text-dark">
+        <h5 class="mb-0">Pending Issues for {{ selected_tenant_email }}</h5>
+      </div>
+      <div class="card-body">
+        {% set pending_issues = landlord_issues 
+            | selectattr('tenant_email', 'equalto', selected_tenant_email) 
+            | selectattr('status', 'equalto', 'pending') 
+            | list %}
+        {% if pending_issues %}
+          <ul class="list-group list-group-flush">
+            {% for issue in pending_issues %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <div>
+                <i class="fas fa-exclamation-circle"></i>
+                <strong>Issue:</strong> {{ issue.label }}<br>
+                <small class="text-muted">Status: {{ issue.status }}</small>
+              </div>
+              <span class="badge badge-warning">{{ issue.status }}</span>
+            </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-muted">No pending issues for this tenant.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Resolved Issues for Selected Tenant -->
+    <div class="card mb-4">
+      <div class="card-header bg-success text-white">
+        <h5 class="mb-0">Resolved Issues for {{ selected_tenant_email }}</h5>
+      </div>
+      <div class="card-body">
+        {% set resolved_issues = landlord_issues 
+            | selectattr('tenant_email', 'equalto', selected_tenant_email) 
+            | selectattr('status', 'equalto', 'resolved') 
+            | list %}
+        {% if resolved_issues %}
+          <ul class="list-group list-group-flush">
+            {% for issue in resolved_issues %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <div>
+                <i class="fas fa-check-circle"></i> 
+                <strong>Issue:</strong> {{ issue.label }}<br>
+                <small class="text-muted">Status: {{ issue.status }}</small>
+              </div>
+              <span class="badge badge-success">{{ issue.status }}</span>
+            </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-muted">No resolved issues for this tenant.</p>
+        {% endif %}
+      </div>
+    </div>
+
   {% else %}
-    <p>No tenants are attached yet.</p>
+    <p class="text-muted text-center">Please select a tenant to view issues.</p>
   {% endif %}
-
-  <hr>
-
-  <!-- Tenant Issues Section -->
-  <h3>Tenant Issues</h3>
-
-  <!-- Pending Issues -->
-  <h4>Pending Issues</h4>
-  {% set pending_found = false %}
-  <ul class="list-group">
-    {% for issue in landlord_issues %}
-      {% if issue.status == 'pending' %}
-        {% set pending_found = true %}
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-          <div>
-            <strong>Tenant Email:</strong> {{ issue.tenant_email }}<br>
-            <strong>Issue:</strong> {{ issue.label }}
-          </div>
-          <span class="badge badge-warning">{{ issue.status }}</span>
-        </li>
-      {% endif %}
-    {% endfor %}
-  </ul>
-
-  <hr>
-
-  <!-- Resolved Issues -->
-  <h4>Resolved Issues</h4>
-  {% set resolved_found = false %}
-  <ul class="list-group">
-    {% for issue in landlord_issues %}
-      {% if issue.status == 'resolved' %}
-        {% set resolved_found = true %}
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-          <div>
-            <strong>Tenant Email:</strong> {{ issue.tenant_email }}<br>
-            <strong>Issue:</strong> {{ issue.label }}
-          </div>
-          <span class="badge badge-success">{{ issue.status }}</span>
-        </li>
-      {% endif %}
-    {% endfor %}
-  </ul>
+</div>
 {% endblock %}
