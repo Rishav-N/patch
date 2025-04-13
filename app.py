@@ -2,11 +2,20 @@
 import os
 import smtplib
 import datetime
+import tempfile
 from email.mime.text import MIMEText
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_socketio import SocketIO, join_room, emit
 import firebase_admin
 from firebase_admin import credentials, firestore
+from appwrite.client import Client
+from appwrite.services.storage import Storage
+from appwrite.permission import Permission 
+from appwrite.role import Role  
+import uuid      
+import io
+from appwrite.id import ID 
+
 
 # Initialize Firebase Admin SDK with your service account key.
 cred = credentials.Certificate('patch-40246-firebase-adminsdk-fbsvc-76101ed4f9.json')
@@ -53,18 +62,7 @@ def load_chat(chat_id):
         return jsonify({"messages": messages})
     except Exception as e:
         return jsonify({"messages": [], "error": str(e)})
-
-@app.route('/upload_image', methods=['POST'])
-def upload_image():
-    from flask import jsonify, request
-    chat_id = request.args.get('chat_id')
-    file = request.files.get('file')
-    if file:
-        # Placeholder: Save file to storage and return the image URL.
-        image_url = "https://via.placeholder.com/150"
-        return jsonify({"success": True, "image_url": image_url})
-    return jsonify({"success": False, "error": "No file uploaded"})
-
+    
 # Socket.IO Events
 
 @socketio.on('join_chat')
