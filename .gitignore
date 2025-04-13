@@ -1,0 +1,15 @@
+# Byte-compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment directories (update as necessary)
+venv/
+
+# Distribution files
+build/
+dist/
+*.egg-info/
+
+# Sensitive files (Firebase credentials)
+patch-40246-firebase-adminsdk-fbsvc-75e8c8f76f.json
