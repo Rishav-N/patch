@@ -1,10 +1,20 @@
 # tenant.py
-from flask import Blueprint, render_template, redirect, url_for, session, flash, jsonify
+import os
+from flask import Blueprint, render_template, redirect, url_for, session, flash, jsonify, request, current_app
 import firebase_admin
 from firebase_admin import firestore
 
+# Roboflow Inference SDK
+from inference_sdk import InferenceHTTPClient
+
 tenant_bp = Blueprint('tenant', __name__, template_folder='templates')
 db = firestore.client()
+
+# Initialize Roboflow Client
+rf_client = InferenceHTTPClient(
+    api_url="https://detect.roboflow.com",
+    api_key="OMzWXPHBONpUpBxpEqDG"  # <-- Replace this with your real API key
+)
 
 @tenant_bp.route('/tenant/dashboard')
 def tenant_dashboard():
@@ -25,19 +35,18 @@ def tenant_dashboard():
     tenant_doc = db.collection('users').document(tenant_uid).get().to_dict()
     current_landlord = tenant_doc.get('landlord') if tenant_doc and 'landlord' in tenant_doc else None
     current_landlord_uid = tenant_doc.get('landlord_uid') if tenant_doc and 'landlord_uid' in tenant_doc else None
-    return render_template('tenant_dashboard.html', requests=requests_list, 
+    return render_template('tenant_dashboard.html', requests=requests_list,
                            current_landlord=current_landlord, current_landlord_uid=current_landlord_uid)
 
 @tenant_bp.route('/tenant/chat')
 def tenant_chat():
-    # Only for tenant.
     if 'username' not in session or session.get('role') != 'tenant':
         return redirect(url_for('auth.login'))
     tenant_uid = session.get('uid')
     tenant_doc = db.collection('users').document(tenant_uid).get().to_dict()
     current_landlord = tenant_doc.get('landlord') if tenant_doc and 'landlord' in tenant_doc else None
     current_landlord_uid = tenant_doc.get('landlord_uid') if tenant_doc and 'landlord_uid' in tenant_doc else None
-    return render_template('tenant_chat.html', current_landlord=current_landlord, 
+    return render_template('tenant_chat.html', current_landlord=current_landlord,
                            current_landlord_uid=current_landlord_uid)
 
 @tenant_bp.route('/accept-request/<request_id>')
@@ -56,13 +65,11 @@ def accept_request(request_id):
                     if not landlord_uid:
                         flash("Landlord UID missing in request.", "danger")
                         return redirect(url_for('tenant.tenant_dashboard'))
-                    # Link tenant to landlord by adding tenant in landlord's subcollection.
                     db.collection('users').document(landlord_uid)\
                       .collection('tenants').document(tenant_uid).set({
                           'email': tenant_email,
                           'attached_at': firestore.SERVER_TIMESTAMP
                       })
-                    # Optionally update tenant's document with landlord info.
                     db.collection('users').document(tenant_uid).update({
                         'landlord': req_data.get('landlord_email'),
                         'landlord_uid': landlord_uid
@@ -77,3 +84,35 @@ def accept_request(request_id):
         return redirect(url_for('tenant.tenant_dashboard'))
     flash("Unauthorized access", "danger")
     return redirect(url_for('auth.login'))
+
+
+@tenant_bp.route('/upload_image', methods=['POST'])
+def upload_image():
+    chat_id = request.args.get('chat_id')
+
+    if 'file' not in request.files:
+        return jsonify({'success': False, 'error': 'No file uploaded'}), 400
+
+    file = request.files['file']
+    filename = file.filename
+
+    temp_dir = 'temp_uploads'
+    os.makedirs(temp_dir, exist_ok=True)
+    save_path = os.path.join(temp_dir, filename)
+    file.save(save_path)
+
+    try:
+        # Inference
+        result = rf_client.infer(save_path, model_id="classification-house-problems/1")
+        predicted_label = result['predictions'][0]['class'] if result['predictions'] else 'Unknown'
+
+        print(f"Predicted Label: {predicted_label}")
+
+        # Clean up temp image
+        os.remove(save_path)
+
+        return jsonify({'success': True, 'label': predicted_label})
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+

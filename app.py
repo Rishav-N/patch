@@ -1,18 +1,13 @@
 # app.py
 import os
-import smtplib
 import datetime
-import requests
-import openai
-from dotenv import load_dotenv
-from email.mime.text import MIMEText
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, session, redirect, url_for
 from flask_socketio import SocketIO, join_room, emit
 import firebase_admin
 from firebase_admin import credentials, firestore
-from ml_model import roboflow_client
+from inference_sdk import InferenceHTTPClient
 
-# Initialize Firebase Admin SDK with your service account key.
+# Initialize Firebase
 cred = credentials.Certificate('firebase_key.json')
 firebase_admin.initialize_app(cred)
 db = firestore.client()
@@ -21,7 +16,13 @@ app = Flask(__name__, static_folder='static')
 app.config['SECRET_KEY'] = 'your_secret_key'
 socketio = SocketIO(app)
 
-# Register Blueprints
+# Roboflow Client
+rf_client = InferenceHTTPClient(
+    api_url="https://serverless.roboflow.com",
+    api_key="OMzWXPHBONpUpBxpEqDG"  # replace with your real API key
+)
+
+# Blueprints
 from auth import auth_bp
 from tenant import tenant_bp
 from landlord import landlord_bp
@@ -31,68 +32,82 @@ app.register_blueprint(tenant_bp)
 app.register_blueprint(landlord_bp)
 
 
-# Global chat route to redirect based on role.
+# Route: Role-Based Chat Redirection
 @app.route('/chat')
 def chat():
-    from flask import session, redirect, url_for
     if 'username' not in session:
         return redirect(url_for('auth.login'))
     if session.get('role') == 'tenant':
         return redirect(url_for('tenant.tenant_chat'))
     elif session.get('role') == 'landlord':
         return redirect(url_for('landlord.landlord_chat'))
-    else:
-        return redirect(url_for('auth.login'))
+    return redirect(url_for('auth.login'))
 
+
+# Route: Upload Image -> Run Model -> Return Label
+@app.route('/upload_image', methods=['POST'])
+def upload_image():
+    chat_id = request.args.get('chat_id')
+
+    if 'file' not in request.files:
+        return jsonify({'success': False, 'error': 'No file uploaded'})
+
+    file = request.files['file']
+    temp_dir = 'temp_uploads'
+    os.makedirs(temp_dir, exist_ok=True)
+    temp_path = os.path.join(temp_dir, file.filename)
+    file.save(temp_path)
+
+    try:
+        # Roboflow Classification
+        prediction = rf_client.infer(temp_path, model_id="classification-house-problems/1")
+        label = prediction['predictions'][0]['class'] if prediction['predictions'] else "Unknown"
+
+        print(f"Inferred Label: {label}")
+
+        # Clean up
+        os.remove(temp_path)
+
+        # Return label + optional static image URL
+        image_url = f'/static/uploads/{file.filename}'  # Optional if you want to store image long-term
+
+        return jsonify({'success': True, 'label': label, 'image_url': image_url})
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+# Route: Load Chat Messages
 @app.route('/load_chat/<chat_id>')
 def load_chat(chat_id):
-    from flask import jsonify
     try:
         messages_ref = db.collection('chats').document(chat_id).collection('messages')
         messages_query = messages_ref.order_by('timestamp', direction=firestore.Query.DESCENDING).limit(10).stream()
-        messages = []
-        for doc in messages_query:
-            msg = doc.to_dict()
-            messages.append(msg)
+        messages = [doc.to_dict() for doc in messages_query]
         messages.reverse()
         return jsonify({"messages": messages})
     except Exception as e:
         return jsonify({"messages": [], "error": str(e)})
 
-@app.route('/upload_image', methods=['POST'])
-def upload_image():
-    # Check if the file is part of the request
-    if 'file' not in request.files:
-        return jsonify(success=False, error="No file uploaded"), 400
 
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify(success=False, error="No file selected"), 400
-
-    # Send the file to the ML model by passing it to predict_image
-    label, confidence = roboflow_client.predict_image(file)
-    
-    # Optionally, you could send the prediction result to the chat with Socket.IO,
-    # or simply return the result to the client.
-    print(label)
-
-    
-# Socket.IO Events
+# Socket.IO: Chat Join
 @socketio.on('join_chat')
 def join_chat(data):
     chat_id = data.get('chat_id')
     join_room(chat_id)
     emit('chat_message', {'sender': 'System', 'message': f"Joined chat room: {chat_id}", 'chat_id': chat_id}, room=chat_id)
 
+
+# Socket.IO: Send Chat Message
 @socketio.on('send_chat_message')
 def handle_send_chat_message(data):
     chat_id = data.get('chat_id')
     sender = data.get('sender')
     message = data.get('message')
     msg_type = data.get('type', "text")
-    
-    # Use UTC time for live broadcast (JSON serializable)
+
     live_timestamp = datetime.datetime.utcnow().isoformat()
+
     live_message_data = {
         'sender': sender,
         'message': message,
@@ -100,6 +115,7 @@ def handle_send_chat_message(data):
         'timestamp': live_timestamp,
         'chat_id': chat_id
     }
+
     store_message_data = {
         'sender': sender,
         'message': message,
@@ -107,18 +123,20 @@ def handle_send_chat_message(data):
         'timestamp': firestore.SERVER_TIMESTAMP,
         'chat_id': chat_id
     }
-    
+
     db.collection('chats').document(chat_id).collection('messages').add(store_message_data)
     emit('chat_message', live_message_data, room=chat_id)
     enforce_message_limit(chat_id)
+
 
 def enforce_message_limit(chat_id, limit=10):
     messages_ref = db.collection('chats').document(chat_id).collection('messages')
     messages = list(messages_ref.order_by('timestamp').stream())
     if len(messages) > limit:
-        num_to_delete = len(messages) - limit
+        num_to_delete = len(messages) - limit   
         for i in range(num_to_delete):
             messages[i].reference.delete()
+
 
 if __name__ == '__main__':
     socketio.run(app, debug=True)

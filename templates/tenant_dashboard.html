@@ -11,7 +11,7 @@
         <li class="list-group-item d-flex justify-content-between align-items-center">
           Request from: {{ req.landlord_email }}
           <!-- Accept link will call a route to update the request -->
-          <a href="{{ url_for('accept_request', request_id=req.id) }}" class="btn btn-sm btn-success">Accept</a>
+          <a href="{{ url_for('tenant.accept_request', request_id=req.id) }}" class="btn btn-sm btn-success">Accept</a>
         </li>
       {% endfor %}
     </ul>
