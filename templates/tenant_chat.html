@@ -139,7 +139,7 @@
         .then(response => response.json())
         .then(issueData => {
           if (issueData.success) {
-            alert("Issue added: " + issueData.label);
+            alert("Issue added: " + issueData.label + ". Legal complaint letter sent to landlord.");
             fileInput.value = "";
             document.getElementById('preview-container').innerHTML = "";
           } else {
