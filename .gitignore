@@ -13,3 +13,5 @@ dist/
 
 # Sensitive files (Firebase credentials)
 patch-40246-firebase-adminsdk-fbsvc-76101ed4f9.json
+
+.env
