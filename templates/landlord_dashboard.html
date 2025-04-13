@@ -5,7 +5,7 @@
   <h2>Welcome, Landlord</h2>
   
   <!-- Send Request Form -->
-  <form action="{{ url_for('send_request') }}" method="POST" class="mb-4">
+  <form action="{{ url_for('landlord.send_request') }}" method="POST" class="mb-4">
     <div class="form-group">
       <label for="tenant_email">Tenant Email</label>
       <input type="email" class="form-control" id="tenant_email" name="tenant_email" placeholder="Enter tenant email" required>

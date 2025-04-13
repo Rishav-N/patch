@@ -36,7 +36,6 @@ def predict():
     # Predict. Use the model and get the results.
     preds = model.predict(img_array)
     predicted_class = np.argmax(preds[0])
-    confidence = float(np.max(preds[0]))
 
     # You need a label mapping
     class_labels = ['mold', 'water_damage', 'floor_damage']  # Example
@@ -47,8 +46,7 @@ def predict():
 
     # Return prediction
     return jsonify({
-        'label': label,
-        'confidence': confidence,
+        'label': label
     })
 
 if __name__ == '__main__':
