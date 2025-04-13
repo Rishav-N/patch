@@ -1,15 +1,30 @@
 {% extends "base.html" %}
+{% block title %}Tenant Dashboard{% endblock %}
 
 {% block content %}
-<h2>Your Submitted Issues</h2>
-
-{% for issue in issues %}
-    <div>
-        <strong>{{ issue.title }}</strong><br>
-        {{ issue.description }}<br>
-        Status: {{ issue.status }}
-    </div>
-{% endfor %}
-
-<a href="/logout">Logout</a>
+  <h2>Welcome, Tenant</h2>
+  
+  <h4>Incoming Requests</h4>
+  {% if requests %}
+    <ul class="list-group">
+      {% for req in requests %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          Request from: {{ req.landlord_email }}
+          <!-- Accept link will call a route to update the request -->
+          <a href="{{ url_for('accept_request', request_id=req.id) }}" class="btn btn-sm btn-success">Accept</a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No new requests.</p>
+  {% endif %}
+  
+  <hr>
+  
+  {% if current_landlord %}
+    <h4>Current Landlord</h4>
+    <p>You are currently attached to: {{ current_landlord }}</p>
+  {% else %}
+    <p>You are not attached to any landlord yet.</p>
+  {% endif %}
 {% endblock %}
