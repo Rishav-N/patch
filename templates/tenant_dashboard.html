@@ -6,29 +6,66 @@
   
   <!-- Section for pending issues -->
   <h4>Pending Issues</h4>
+  {% if pending_issues %}
     <ul class="list-group">
       {% for issue in pending_issues %}
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-          {{ issue.label }} - <span class="badge badge-warning">{{ issue.status }}</span>
-          <!-- A form is used so that we can use POST to update the issue -->
-          <form action="{{ url_for('tenant.solve_issue', issue_id=issue.id) }}" method="POST" style="margin:0;">
-            <button type="submit" class="btn btn-sm btn-primary">Solve</button>
-          </form>
+        <li class="list-group-item">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              {{ issue.label }} - <span class="badge badge-warning">{{ issue.status }}</span>
+            </div>
+            <div>
+              <!-- Solve form if desired -->
+              <form action="{{ url_for('tenant.solve_issue', issue_id=issue.id) }}" method="POST" style="margin:0;">
+                <button type="submit" class="btn btn-sm btn-primary">Solve</button>
+              </form>
+            </div>
+          </div>
+          <div class="mt-2">
+            <small>
+              You are able to file this legal report to the authorities in {{ issue.days }} days if the issue is not fixed.
+            </small>
+            <br>
+            <a href="{{ url_for('tenant.download_report', issue_id=issue.id) }}" class="btn btn-link p-0" download="legal_report.docx">
+              Download Legal Report
+            </a>
+          </div>
         </li>
       {% endfor %}
     </ul>
+  {% else %}
+    <p>No pending issues.</p>
+  {% endif %}
+  
   <hr>
   
   <!-- Section for resolved issues -->
   <h4>Resolved Issues</h4>
+  {% if resolved_issues %}
     <ul class="list-group">
       {% for issue in resolved_issues %}
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-          {{ issue.label }} - <span class="badge badge-success">{{ issue.status }}</span>
-          <!-- No solve button here -->
+        <li class="list-group-item">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              {{ issue.label }} - <span class="badge badge-success">{{ issue.status }}</span>
+            </div>
+          </div>
+          <div class="mt-2">
+            <small>
+              You are able to file this legal report to the authorities in {{ issue.days }} days if the issue is not fixed.
+            </small>
+            <br>
+            <a href="{{ url_for('tenant.download_report', issue_id=issue.id) }}" class="btn btn-link p-0" download="legal_report.docx">
+              Download Legal Report
+            </a>
+          </div>
         </li>
       {% endfor %}
     </ul>
+  {% else %}
+    <p>No resolved issues.</p>
+  {% endif %}
+  
   <hr>
   
   <!-- Existing content for requests and current landlord -->

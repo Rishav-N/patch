@@ -1,8 +1,10 @@
 # tenant.py
 import os
-from flask import Blueprint, render_template, redirect, url_for, session, flash, jsonify, request, current_app
+from flask import Blueprint, render_template, redirect, url_for, session, flash, jsonify, request, current_app, send_file, abort
 import firebase_admin
 from firebase_admin import firestore
+from io import BytesIO
+from docx import Document
 
 # Roboflow Inference SDK
 from inference_sdk import InferenceHTTPClient
@@ -61,6 +63,35 @@ def tenant_dashboard():
         current_landlord_uid=current_landlord_uid,
         pending_issues=pending_issues,
         resolved_issues=resolved_issues
+    )
+
+@tenant_bp.route('/tenant/download_report/<issue_id>')
+def download_report(issue_id):
+    # Fetch the issue document from Firestore.
+    issue_ref = db.collection("issues").document(issue_id)
+    issue = issue_ref.get()
+    if not issue.exists:
+        abort(404, description="Issue not found.")
+    issue_data = issue.to_dict()
+    
+    # Retrieve the legal report from the "ai_advice" field.
+    ai_advice = issue_data.get("ai_advice")
+    if not ai_advice:
+        abort(404, description="Legal report not available for this issue.")
+    
+    # Create a DOCX file in memory.
+    document = Document()
+    document.add_paragraph(ai_advice)
+    file_stream = BytesIO()
+    document.save(file_stream)
+    file_stream.seek(0)
+    
+    # Return the DOCX file as an attachment.
+    return send_file(
+        file_stream,
+        as_attachment=True,
+        download_name="legal_report.docx",
+        mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
 
 @tenant_bp.route('/tenant/solve_issue/<issue_id>', methods=['POST'])
