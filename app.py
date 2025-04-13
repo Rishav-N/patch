@@ -4,6 +4,7 @@ import smtplib
 import datetime
 import requests
 import openai
+import boto3
 from dotenv import load_dotenv
 from email.mime.text import MIMEText
 from flask import Flask, jsonify
@@ -23,6 +24,13 @@ db = firestore.client()
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
 socketio = SocketIO(app)
+
+s3 = boto3.client(
+    's3',
+    aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+    aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
+)
+S3_BUCKET_NAME = os.getenv('S3_BUCKET_NAME')
 
 # Register Blueprints
 from auth import auth_bp
@@ -66,11 +74,28 @@ def upload_image():
     from flask import jsonify, request
     chat_id = request.args.get('chat_id')
     file = request.files.get('file')
-    if file:
-        # Placeholder: Save file to storage and return the image URL.
-        image_url = "https://via.placeholder.com/150"
+    
+    if not file:
+        return jsonify({"success": False, "error": "No file uploaded"})
+    
+    try:
+        filename = file.filename
+        s3.upload_fileobj(
+            file,
+            S3_BUCKET_NAME,
+            filename,
+            ExtraArgs={"ACL": "public-read", "ContentType": file.content_type}
+        )
+
+        # Build public URL for uploaded image
+        image_url = f"https://{S3_BUCKET_NAME}.s3.amazonaws.com/{filename}"
         return jsonify({"success": True, "image_url": image_url})
-    return jsonify({"success": False, "error": "No file uploaded"})
+    
+    # Placeholder: Save file to storage and return the image URL.
+    #image_url = "https://via.placeholder.com/150"
+    #return jsonify({"success": True, "image_url": image_url})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/analyze_issue', methods=['POST'])
 def analyze_issue():
