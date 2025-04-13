@@ -1,16 +1,15 @@
 {
-    "version": 2,
-    "builds": [
-      {
-        "src": "patch/app.py",
-        "use": "@vercel/python"
-      }
-    ],
-    "routes": [
-      {
-        "src": "/(.*)",
-        "dest": "patch/app.py"
-      }
-    ]
+  "version": 2,
+  "builds": [
+    {
+      "src": "patch/app.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "patch/app.py"
+    }
+  ]
 }
-  

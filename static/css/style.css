@@ -1,7 +1,6 @@
-/* === Chat Window and Bubbles === */
 
 #chat-window {
-    background-color: #f8f9fa; /* slight gray */
+    background-color: #f8f9fa; 
     border: 1px solid #dee2e6;
     border-radius: 0.5rem;
     padding: 1rem;
@@ -19,25 +18,22 @@
     word-wrap: break-word;
 }
 
-/* Tenant (YOU) message */
 .tenant-message {
-    background-color: #dbeafe; /* Light Blue */
+    background-color: #dbeafe; 
     align-self: flex-end;
     margin-left: auto;
     margin-right: 10px;
     text-align: left;
 }
 
-/* Landlord message */
 .landlord-message {
-    background-color: #e2e8f0; /* Soft Gray */
+    background-color: #e2e8f0;
     align-self: flex-start;
     margin-left: 10px;
     margin-right: auto;
     text-align: left;
 }
 
-/* === File Upload and Submit Styling === */
 
 #submit-request-section label {
     font-weight: 600;

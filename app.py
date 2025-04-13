@@ -1,4 +1,3 @@
-# app.py
 import os
 import datetime
 from google import genai
@@ -9,7 +8,6 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 from inference_sdk import InferenceHTTPClient
 
-# Initialize Firebase
 cred = credentials.Certificate('firebase_key.json')
 firebase_admin.initialize_app(cred)
 db = firestore.client()
@@ -21,13 +19,11 @@ app = Flask(__name__, static_folder='static')
 app.config['SECRET_KEY'] = 'your_secret_key'
 socketio = SocketIO(app)
 
-# Roboflow Client
 rf_client = InferenceHTTPClient(
     api_url="https://serverless.roboflow.com",
-    api_key="OMzWXPHBONpUpBxpEqDG"  # replace with your real API key
+    api_key="OMzWXPHBONpUpBxpEqDG"  
 )
 
-# Blueprints
 from auth import auth_bp
 from tenant import tenant_bp
 from landlord import landlord_bp
@@ -38,7 +34,6 @@ app.register_blueprint(tenant_bp)
 app.register_blueprint(landlord_bp)
 app.register_blueprint(profile_bp)
 
-# Route: Role-Based Chat Redirection
 @app.route('/chat')
 def chat():
     if 'username' not in session:
@@ -50,7 +45,6 @@ def chat():
     return redirect(url_for('auth.login'))
 
 
-# Helper function to get advice from OpenAI
 def get_ai_advice_from_label(user, state, label):
     try:
         prompt = (
@@ -78,7 +72,6 @@ def get_ai_advice_from_label(user, state, label):
         print(f"Gemini API error: {e}")
         return "Unable to generate advice at the moment."
 
-# Helper function to get advice from OpenAI
 def get_ai_days_from_label(state, label):
     try:
         prompt = (
@@ -101,7 +94,6 @@ def get_ai_days_from_label(state, label):
         print(f"Gemini API error: {e}")
         return "Unable to generate advice at the moment."
     
-# Route: Upload Image -> Run Model -> Return Label
 @app.route('/upload_image', methods=['POST'])
 def upload_image():
     chat_id = request.args.get('chat_id')
@@ -116,13 +108,11 @@ def upload_image():
     file.save(temp_path)
 
     try:
-        # Roboflow Classification
         prediction = rf_client.infer(temp_path, model_id="classification-house-problems/1")
         label = prediction['predictions'][0]['class'] if prediction['predictions'] else "Unknown"
 
         print(f"Inferred Label: {label}")
 
-        # Clean up
         os.remove(temp_path)
         current_user = session.get('username')
         state = session.get('state')  
@@ -146,19 +136,16 @@ def add_issue():
     issue along with tenant and status.
     """
     try:
-        # Get JSON data from the request.
         data = request.get_json(force=True)
         label = data.get("label")
         
         if not label:
             return jsonify({"success": False, "error": "Missing 'label' field"}), 400
 
-        # Retrieve the current user from the session.
         current_user = session.get("uid")
         if not current_user:
             return jsonify({"success": False, "error": "User not logged in"}), 400
 
-        # Retrieve additional details (like state and username) about the current user from Firestore.
         user_doc = db.collection('users').document(current_user).get()
         if not user_doc.exists:
             return jsonify({"success": False, "error": "User data not found"}), 404
@@ -169,32 +156,26 @@ def add_issue():
         if not state:
             return jsonify({"success": False, "error": "User state not found"}), 400
 
-        # Get AI advice using the helper function.
         ai_advice = get_ai_advice_from_label(username, state, label)
         num_days = get_ai_days_from_label(state, label)
 
-        # Prepare the data to be stored as an issue.
         issue_data = {
             "label": label,
-            "tenant": current_user,  # current user as the tenant
+            "tenant": current_user,  
             "status": "pending",
             "ai_advice": ai_advice,
             "days": num_days
         }
 
-        # Add the issue to the 'issues' collection in Firestore.
         db.collection("issues").add(issue_data)
 
-        # Return success response.
         return jsonify({"success": True, "label": label, "tenant": current_user}), 200
 
     except Exception as e:
-        # In case of error, return a failure response with error message.
         return jsonify({"success": False, "error": str(e)}), 500
 
 
 
-# Route: Load Chat Messages
 @app.route('/load_chat/<chat_id>')
 def load_chat(chat_id):
     try:
@@ -207,14 +188,12 @@ def load_chat(chat_id):
         return jsonify({"messages": [], "error": str(e)})
 
 
-# Socket.IO: Chat Join
 @socketio.on('join_chat')
 def join_chat(data):
     chat_id = data.get('chat_id')
     join_room(chat_id)
     emit('chat_message', {'sender': 'System', 'message': f"Joined chat room: {chat_id}", 'chat_id': chat_id}, room=chat_id)
      
-# Socket.IO: Send Chat Message
 @socketio.on('send_chat_message')
 def handle_send_chat_message(data):
     chat_id = data.get('chat_id')

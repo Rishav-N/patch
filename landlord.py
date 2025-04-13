@@ -1,4 +1,3 @@
-# landlord.py
 from flask import Blueprint, render_template, redirect, url_for, session, flash, request
 import firebase_admin
 from firebase_admin import firestore, auth
@@ -13,7 +12,6 @@ def dashboard_landlord():
     if 'username' in session and session.get('role') == 'landlord':
         landlord_uid = session.get('uid')
 
-        # Get all tenants attached to this landlord
         tenants_ref = db.collection('users').document(landlord_uid).collection('tenants')
         tenants_docs = tenants_ref.stream()
         tenants = []
@@ -22,7 +20,6 @@ def dashboard_landlord():
             t['uid'] = doc.id
             tenants.append(t)
 
-        # Get tenant email selected from dropdown (query parameter)
         selected_tenant_email = request.args.get('tenant_email')
 
         landlord_issues = []

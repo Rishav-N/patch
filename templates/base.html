@@ -1,19 +1,13 @@
-<!-- templates/base.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>{% block title %}Patch{% endblock %}</title>
-  <!-- Bootstrap CSS CDN -->
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-  <!-- Font Awesome for icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-  <!-- Custom CSS -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-  <!-- Socket.IO -->
   <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
   <style>
-    /* Sidebar Styles */
     .sidenav {
       height: 100%;
       width: 0;
@@ -54,7 +48,6 @@
   {% block head %}{% endblock %}
 </head>
 <body>
-  <!-- Sidebar Navigation (hidden by default) -->
   <div id="mySidenav" class="sidenav">
     <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
     <a href="/">Home</a>
@@ -63,22 +56,18 @@
     <a href="/logout">Logout</a>
   </div>
 
-  <!-- Top Navigation Bar -->
   <nav class="navbar navbar-light bg-light d-flex justify-content-between align-items-center">
     <div>
-      <!-- Hamburger icon to toggle sidebar -->
       <span class="menu-toggle" onclick="openNav()">&#9776;</span>
       <span class="navbar-brand mb-0 h1">{% block navbar_title %}Patch{% endblock %}</span>
     </div>
   </nav>
 
-  <!-- Main Content Area -->
   <div class="container mt-4">
     {% block content %}{% endblock %}
   </div>
 
   <script>
-    // Sidebar control functions
     function openNav() {
       document.getElementById("mySidenav").style.width = "250px";
     }
@@ -88,14 +77,11 @@
   </script>
   {% block scripts %}{% endblock %}
 
-  <!-- Dark Mode Toggle Script -->
   <script>
-    // On page load, set dark mode if saved in localStorage
     if (localStorage.getItem('theme') === 'dark') {
       document.documentElement.setAttribute('data-theme', 'dark');
     }
     
-    // Add event listener for the dark mode toggle button
     const toggleButton = document.getElementById('dark-mode-toggle');
     if (toggleButton) {
       toggleButton.addEventListener('click', function() {
