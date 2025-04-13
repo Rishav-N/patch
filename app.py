@@ -71,7 +71,31 @@ def get_ai_advice_from_label(user, state, label):
             model="gemini-2.0-flash",
             contents=[{"text": prompt}]
         )
+        
         return response.text.strip()
+    except Exception as e:
+        print(f"Gemini API error: {e}")
+        return "Unable to generate advice at the moment."
+
+# Helper function to get advice from OpenAI
+def get_ai_days_from_label(state, label):
+    try:
+        prompt = (
+            f"Act as a legal expert specializing in housing and tenant rights. I need you to determine"
+            f"the statutory period—the number of days a landlord has to fix an issue in a rented living "
+            f"space before a tenant can file a legal claim—based on state law."
+            f"State: {state} Issue: {label}"
+            f"Please provide: "
+            f"1. The specific number of days (or the range of days) the law grants for the landlord "
+            f"to address this issue before a legal claim can be filed."
+            f"Output the answer AS ONE INTEGER NOTHING MORE NOTHING LESS" 
+        )
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=[{"text": prompt}]
+        )
+        
+        return int(response.text.strip())
     except Exception as e:
         print(f"Gemini API error: {e}")
         return "Unable to generate advice at the moment."
@@ -102,34 +126,10 @@ def upload_image():
         current_user = session.get('username')
         state = session.get('state')  
 
-        complaint_text = get_ai_advice_from_label(current_user, state, label)
-        
-        complaints_dir = 'static/complaints'
-        os.makedirs(complaints_dir, exist_ok=True)
-        complaint_filename = f"complaint_{chat_id}_{datetime.datetime.now().timestamp()}.txt"
-        complaint_path = os.path.join(complaints_dir, complaint_filename)
-
-        with open(complaint_path, 'w') as f:
-            f.write(complaint_text)
-        complaint_url = f"/static/complaints/{complaint_filename}"
-
-        full_message = f"Issue detected: {label}.\nComplaint letter generated and sent to landlord."
-
-        message_data = {
-            'sender': 'AI Assistant',
-            'message': full_message,
-            'type': 'analysis',
-            'timestamp': firestore.SERVER_TIMESTAMP,
-            'chat_id': chat_id,
-            'complaint_url': complaint_url 
-
-        }
-        db.collection('chats').document(chat_id).collection('messages').add(message_data)
 
         return jsonify({
             'success': True,
-            'label': label,
-            'complaint_url': complaint_url
+            'label': label
         })
     
     except Exception as e:
@@ -139,10 +139,10 @@ def upload_image():
 @app.route('/addIssue', methods=['POST'])
 def add_issue():
     """
-    Expects a JSON payload with a key 'label'. The currently logged-in user
-    is retrieved from the session and added to the issue. This endpoint creates
-    a new issue document in Firestore with the label, the current user as the tenant,
-    and sets the status to 'pending'.
+    Expects a JSON payload with a key 'label'. Retrieves the current user's uid from the session,
+    fetches additional user details (e.g. state) from Firestore, and uses the data along with the label
+    to generate legal advice using get_ai_advice_from_label. The resulting advice is stored with the
+    issue along with tenant and status.
     """
     try:
         # Get JSON data from the request.
@@ -153,16 +153,32 @@ def add_issue():
             return jsonify({"success": False, "error": "Missing 'label' field"}), 400
 
         # Retrieve the current user from the session.
-        # You can store the user identifier in session when the user logs in.
-        current_user = session.get("uid")  # or session.get("current_user"), as appropriate.
+        current_user = session.get("uid")
         if not current_user:
             return jsonify({"success": False, "error": "User not logged in"}), 400
+
+        # Retrieve additional details (like state and username) about the current user from Firestore.
+        user_doc = db.collection('users').document(current_user).get()
+        if not user_doc.exists:
+            return jsonify({"success": False, "error": "User data not found"}), 404
+        user_data = user_doc.to_dict()
+        state = user_data.get("state")
+        username = user_data.get("username", current_user)
+
+        if not state:
+            return jsonify({"success": False, "error": "User state not found"}), 400
+
+        # Get AI advice using the helper function.
+        ai_advice = get_ai_advice_from_label(username, state, label)
+        num_days = get_ai_days_from_label(state, label)
 
         # Prepare the data to be stored as an issue.
         issue_data = {
             "label": label,
-            "tenant": current_user,  # Adding the current user from the session as the tenant.
-            "status": "pending"
+            "tenant": current_user,  # current user as the tenant
+            "status": "pending",
+            "ai_advice": ai_advice,
+            "days": num_days
         }
 
         # Add the issue to the 'issues' collection in Firestore.
