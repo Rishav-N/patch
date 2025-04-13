@@ -6,7 +6,6 @@ __pycache__/
 # Virtual environment directories (update as necessary)
 venv/
 
-
 firebase_key.json
 
 # Distribution files

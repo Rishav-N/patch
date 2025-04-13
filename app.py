@@ -52,9 +52,24 @@ def chat():
 # Helper function to get advice from OpenAI
 def get_ai_advice_from_label(user, state, label):
     try:
+        prompt = (
+            f"Act as a legal expert in housing and tenant rights.\n\n"
+            f"Create a formal legal complaint letter that a tenant named '{user}' "
+            f"living in the state of '{state}' can send to their landlord.\n\n"
+            f"The complaint is about the following issue: '{label}'.\n\n"
+            f"The letter should:\n"
+            f"- Mention relevant state-specific tenant rights and repair laws (for {state})\n"
+            f"- Formally demand that the landlord fixes the issue\n"
+            f"- Specify a reasonable time frame for repair (e.g., 7 days)\n"
+            f"- Clearly state possible legal consequences (such as withholding rent, small claims court, health department complaints) "
+            f"if the landlord fails to act\n"
+            f"- Be written in a formal, professional tone\n"
+            f"- Assume the tenant wants to stay polite but firm\n\n"
+            f"Output the complete legal letter ready to be copied and sent."
+        )
         response = client.models.generate_content(
             model="gemini-2.0-flash",
-            contents=[{"text": f" : {label}."}]
+            contents=[{"text": prompt}]
         )
         return response.text.strip()
     except Exception as e:
@@ -84,26 +99,39 @@ def upload_image():
 
         # Clean up
         os.remove(temp_path)
+        current_user = session.get('username')
+        state = session.get('state')  
 
-        advice = get_ai_advice_from_label(label)
+        complaint_text = get_ai_advice_from_label(current_user, state, label)
+        
+        complaints_dir = 'static/complaints'
+        os.makedirs(complaints_dir, exist_ok=True)
+        complaint_filename = f"complaint_{chat_id}_{datetime.datetime.now().timestamp()}.txt"
+        complaint_path = os.path.join(complaints_dir, complaint_filename)
 
-        full_message = f"Issue detected: {label}.\nAdvice: {advice}"
+        with open(complaint_path, 'w') as f:
+            f.write(complaint_text)
+        complaint_url = f"/static/complaints/{complaint_filename}"
+
+        full_message = f"Issue detected: {label}.\nComplaint letter generated and sent to landlord."
 
         message_data = {
             'sender': 'AI Assistant',
             'message': full_message,
             'type': 'analysis',
             'timestamp': firestore.SERVER_TIMESTAMP,
-            'chat_id': chat_id
+            'chat_id': chat_id,
+            'complaint_url': complaint_url 
+
         }
         db.collection('chats').document(chat_id).collection('messages').add(message_data)
 
-
-        # Return label + optional static image URL
-        image_url = f'/static/uploads/{file.filename}'  # Optional if you want to store image long-term
-
-        return jsonify({'success': True, 'label': label, 'image_url': image_url})
-
+        return jsonify({
+            'success': True,
+            'label': label,
+            'complaint_url': complaint_url
+        })
+    
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
@@ -207,8 +235,6 @@ def enforce_message_limit(chat_id, limit=10):
         num_to_delete = len(messages) - limit   
         for i in range(num_to_delete):
             messages[i].reference.delete()
-
-
 
 if __name__ == '__main__':
     socketio.run(app, debug=True)
