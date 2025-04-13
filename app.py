@@ -1,6 +1,8 @@
 # app.py
 import os
 import datetime
+from google import genai
+from dotenv import load_dotenv
 from flask import Flask, jsonify, request, session, redirect, url_for
 from flask_socketio import SocketIO, join_room, emit
 import firebase_admin
@@ -11,6 +13,9 @@ from inference_sdk import InferenceHTTPClient
 cred = credentials.Certificate('firebase_key.json')
 firebase_admin.initialize_app(cred)
 db = firestore.client()
+
+load_dotenv()
+client = genai.Client(api_key=os.getenv('GEMINI_API_KEY'))
 
 app = Flask(__name__, static_folder='static')
 app.config['SECRET_KEY'] = 'your_secret_key'
@@ -44,6 +49,18 @@ def chat():
     return redirect(url_for('auth.login'))
 
 
+# Helper function to get advice from OpenAI
+def get_ai_advice_from_label(label):
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=[{"text": f"Give friendly, practical advice for this apartment maintenance issue: {label}."}]
+        )
+        return response.text.strip()
+    except Exception as e:
+        print(f"Gemini API error: {e}")
+        return "Unable to generate advice at the moment."
+    
 # Route: Upload Image -> Run Model -> Return Label
 @app.route('/upload_image', methods=['POST'])
 def upload_image():
@@ -67,6 +84,20 @@ def upload_image():
 
         # Clean up
         os.remove(temp_path)
+
+        advice = get_ai_advice_from_label(label)
+
+        full_message = f"Issue detected: {label}.\nAdvice: {advice}"
+
+        message_data = {
+            'sender': 'AI Assistant',
+            'message': full_message,
+            'type': 'analysis',
+            'timestamp': firestore.SERVER_TIMESTAMP,
+            'chat_id': chat_id
+        }
+        db.collection('chats').document(chat_id).collection('messages').add(message_data)
+
 
         # Return label + optional static image URL
         image_url = f'/static/uploads/{file.filename}'  # Optional if you want to store image long-term
@@ -96,8 +127,7 @@ def join_chat(data):
     chat_id = data.get('chat_id')
     join_room(chat_id)
     emit('chat_message', {'sender': 'System', 'message': f"Joined chat room: {chat_id}", 'chat_id': chat_id}, room=chat_id)
-
-
+     
 # Socket.IO: Send Chat Message
 @socketio.on('send_chat_message')
 def handle_send_chat_message(data):
@@ -137,6 +167,20 @@ def enforce_message_limit(chat_id, limit=10):
         for i in range(num_to_delete):
             messages[i].reference.delete()
 
+# New Route: Get Advice Separately
+@app.route('/get_advice', methods=['POST'])
+def get_advice():
+    try:
+        data = request.get_json()
+        label = data.get('label')
+        if not label:
+            return jsonify({'success': False, 'error': 'No label provided'}), 400
+        
+        advice = get_ai_advice_from_label(label)
+        return jsonify({'success': True, 'advice': advice})
+    
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
     socketio.run(app, debug=True)

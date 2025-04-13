@@ -130,8 +130,27 @@
     .then(data => {
       if (data.success) {
         alert("Issue Detected: " + data.label);
-        fileInput.value = "";
-        document.getElementById('preview-container').innerHTML = "";
+
+        fetch('/get_advice', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ label: data.label })
+      })
+      .then(response => response.json())
+      .then(adviceData => {
+        if (adviceData.success) {
+          alert("Advice: " + adviceData.advice);
+          fileInput.value = "";
+          document.getElementById('preview-container').innerHTML = "";
+        } else {
+          alert("Failed to fetch advice.");
+        }
+        })
+      .catch(error => {
+        alert("Error getting advice: " + error);
+        });
       } else {
         alert("Image upload failed: " + (data.error || "Unknown error"));
       }

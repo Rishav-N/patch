@@ -84,35 +84,3 @@ def accept_request(request_id):
         return redirect(url_for('tenant.tenant_dashboard'))
     flash("Unauthorized access", "danger")
     return redirect(url_for('auth.login'))
-
-
-@tenant_bp.route('/upload_image', methods=['POST'])
-def upload_image():
-    chat_id = request.args.get('chat_id')
-
-    if 'file' not in request.files:
-        return jsonify({'success': False, 'error': 'No file uploaded'}), 400
-
-    file = request.files['file']
-    filename = file.filename
-
-    temp_dir = 'temp_uploads'
-    os.makedirs(temp_dir, exist_ok=True)
-    save_path = os.path.join(temp_dir, filename)
-    file.save(save_path)
-
-    try:
-        # Inference
-        result = rf_client.infer(save_path, model_id="classification-house-problems/1")
-        predicted_label = result['predictions'][0]['class'] if result['predictions'] else 'Unknown'
-
-        print(f"Predicted Label: {predicted_label}")
-
-        # Clean up temp image
-        os.remove(save_path)
-
-        return jsonify({'success': True, 'label': predicted_label})
-
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
