@@ -20,8 +20,10 @@ rf_client = InferenceHTTPClient(
 def tenant_dashboard():
     if 'username' not in session or session.get('role') != 'tenant':
         return redirect(url_for('auth.login'))
+    
     tenant_email = session.get('username')
     tenant_uid = session.get('uid')
+    
     # Query pending requests.
     requests_query = db.collection('requests') \
                        .where('tenant_email', '==', tenant_email) \
@@ -32,11 +34,65 @@ def tenant_dashboard():
         req = doc.to_dict()
         req['id'] = doc.id
         requests_list.append(req)
+    
+    # Query issues for the current tenant.
+    issues_query = db.collection('issues') \
+                     .where('tenant', '==', tenant_uid) \
+                     .stream()
+    issues_list = []
+    for doc in issues_query:
+        issue = doc.to_dict()
+        issue['id'] = doc.id
+        issues_list.append(issue)
+    
+    # Split issues into pending and resolved.
+    pending_issues = [issue for issue in issues_list if issue.get('status') == 'pending']
+    resolved_issues = [issue for issue in issues_list if issue.get('status') == 'resolved']
+    
+    # Get tenant document to retrieve the current landlord info.
     tenant_doc = db.collection('users').document(tenant_uid).get().to_dict()
     current_landlord = tenant_doc.get('landlord') if tenant_doc and 'landlord' in tenant_doc else None
     current_landlord_uid = tenant_doc.get('landlord_uid') if tenant_doc and 'landlord_uid' in tenant_doc else None
-    return render_template('tenant_dashboard.html', requests=requests_list,
-                           current_landlord=current_landlord, current_landlord_uid=current_landlord_uid)
+    
+    return render_template(
+        'tenant_dashboard.html',
+        requests=requests_list,
+        current_landlord=current_landlord,
+        current_landlord_uid=current_landlord_uid,
+        pending_issues=pending_issues,
+        resolved_issues=resolved_issues
+    )
+
+@tenant_bp.route('/tenant/solve_issue/<issue_id>', methods=['POST'])
+def solve_issue(issue_id):
+    """
+    Updates the specified issue's status to "resolved" for the current tenant.
+    """
+    tenant_uid = session.get("uid")
+    if not tenant_uid:
+        return jsonify({"success": False, "error": "User not logged in"}), 401
+
+    try:
+        # Get a reference to the issue document.
+        issue_ref = db.collection("issues").document(issue_id)
+        issue = issue_ref.get()
+        if not issue.exists:
+            return jsonify({"success": False, "error": "Issue not found"}), 404
+
+        issue_data = issue.to_dict()
+        # Optionally verify that this issue belongs to the current tenant.
+        if issue_data.get("tenant") != tenant_uid:
+            return jsonify({"success": False, "error": "Not authorized"}), 403
+
+        # Update the status to resolved.
+        issue_ref.update({"status": "resolved"})
+
+        return redirect(url_for('tenant.tenant_dashboard'))
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+if __name__ == '__main__':
+    app.run(debug=True)
 
 @tenant_bp.route('/tenant/chat')
 def tenant_chat():

@@ -16,15 +16,58 @@
   <!-- Tenants List Section -->
   <h3>Attached Tenants</h3>
   {% if tenants %}
-    <ul class="list-group">
+    <ul class="list-group mb-4">
       {% for tenant in tenants %}
         <li class="list-group-item">
           <strong>Email:</strong> {{ tenant.email }}
-          <!-- You can add additional details about the tenant here -->
+          <!-- Additional details about the tenant can be added here -->
         </li>
       {% endfor %}
     </ul>
   {% else %}
     <p>No tenants are attached yet.</p>
   {% endif %}
+
+  <hr>
+
+  <!-- Tenant Issues Section -->
+  <h3>Tenant Issues</h3>
+
+  <!-- Pending Issues -->
+  <h4>Pending Issues</h4>
+  {% set pending_found = false %}
+  <ul class="list-group">
+    {% for issue in landlord_issues %}
+      {% if issue.status == 'pending' %}
+        {% set pending_found = true %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+            <strong>Tenant Email:</strong> {{ issue.tenant_email }}<br>
+            <strong>Issue:</strong> {{ issue.label }}
+          </div>
+          <span class="badge badge-warning">{{ issue.status }}</span>
+        </li>
+      {% endif %}
+    {% endfor %}
+  </ul>
+
+  <hr>
+
+  <!-- Resolved Issues -->
+  <h4>Resolved Issues</h4>
+  {% set resolved_found = false %}
+  <ul class="list-group">
+    {% for issue in landlord_issues %}
+      {% if issue.status == 'resolved' %}
+        {% set resolved_found = true %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+            <strong>Tenant Email:</strong> {{ issue.tenant_email }}<br>
+            <strong>Issue:</strong> {{ issue.label }}
+          </div>
+          <span class="badge badge-success">{{ issue.status }}</span>
+        </li>
+      {% endif %}
+    {% endfor %}
+  </ul>
 {% endblock %}

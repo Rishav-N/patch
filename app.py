@@ -108,6 +108,47 @@ def upload_image():
         return jsonify({'success': False, 'error': str(e)})
 
 
+@app.route('/addIssue', methods=['POST'])
+def add_issue():
+    """
+    Expects a JSON payload with a key 'label'. The currently logged-in user
+    is retrieved from the session and added to the issue. This endpoint creates
+    a new issue document in Firestore with the label, the current user as the tenant,
+    and sets the status to 'pending'.
+    """
+    try:
+        # Get JSON data from the request.
+        data = request.get_json(force=True)
+        label = data.get("label")
+        
+        if not label:
+            return jsonify({"success": False, "error": "Missing 'label' field"}), 400
+
+        # Retrieve the current user from the session.
+        # You can store the user identifier in session when the user logs in.
+        current_user = session.get("uid")  # or session.get("current_user"), as appropriate.
+        if not current_user:
+            return jsonify({"success": False, "error": "User not logged in"}), 400
+
+        # Prepare the data to be stored as an issue.
+        issue_data = {
+            "label": label,
+            "tenant": current_user,  # Adding the current user from the session as the tenant.
+            "status": "pending"
+        }
+
+        # Add the issue to the 'issues' collection in Firestore.
+        db.collection("issues").add(issue_data)
+
+        # Return success response.
+        return jsonify({"success": True, "label": label, "tenant": current_user}), 200
+
+    except Exception as e:
+        # In case of error, return a failure response with error message.
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+
 # Route: Load Chat Messages
 @app.route('/load_chat/<chat_id>')
 def load_chat(chat_id):

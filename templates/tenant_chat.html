@@ -123,34 +123,30 @@
     formData.append('file', file);
 
     fetch('/upload_image?chat_id=' + chatId, {
-      method: 'POST',
-      body: formData
+    method: 'POST',
+    body: formData
     })
     .then(response => response.json())
     .then(data => {
       if (data.success) {
-        alert("Issue Detected: " + data.label);
-
-        fetch('/get_advice', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ label: data.label })
-      })
-      .then(response => response.json())
-      .then(adviceData => {
-        if (adviceData.success) {
-          alert("Advice: " + adviceData.advice);
-          fileInput.value = "";
-          document.getElementById('preview-container').innerHTML = "";
-        } else {
-          alert("Failed to fetch advice.");
-        }
+        fetch('/addIssue', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ label: data.label })
         })
-      .catch(error => {
-        alert("Error getting advice: " + error);
-        });
+        .then(response => response.json())
+        .then(issueData => {
+          if (issueData.success) {
+            alert("Issue added: " + issueData.label);
+            fileInput.value = "";
+            document.getElementById('preview-container').innerHTML = "";
+          } else {
+            alert("Failed to add issue: " + (issueData.error || "Unknown error"));
+          }
+        })
+        .catch(err => alert("Error adding issue: " + err));
       } else {
         alert("Image upload failed: " + (data.error || "Unknown error"));
       }
