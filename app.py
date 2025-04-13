@@ -10,6 +10,7 @@ from flask import Flask, jsonify, request
 from flask_socketio import SocketIO, join_room, emit
 import firebase_admin
 from firebase_admin import credentials, firestore
+from ml_model import roboflow_client
 
 # Initialize Firebase Admin SDK with your service account key.
 cred = credentials.Certificate('firebase_key.json')
@@ -28,6 +29,7 @@ from landlord import landlord_bp
 app.register_blueprint(auth_bp)
 app.register_blueprint(tenant_bp)
 app.register_blueprint(landlord_bp)
+
 
 # Global chat route to redirect based on role.
 @app.route('/chat')
@@ -56,6 +58,24 @@ def load_chat(chat_id):
         return jsonify({"messages": messages})
     except Exception as e:
         return jsonify({"messages": [], "error": str(e)})
+
+@app.route('/upload_image', methods=['POST'])
+def upload_image():
+    # Check if the file is part of the request
+    if 'file' not in request.files:
+        return jsonify(success=False, error="No file uploaded"), 400
+
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify(success=False, error="No file selected"), 400
+
+    # Send the file to the ML model by passing it to predict_image
+    label, confidence = roboflow_client.predict_image(file)
+    
+    # Optionally, you could send the prediction result to the chat with Socket.IO,
+    # or simply return the result to the client.
+    print(label)
+
     
 # Socket.IO Events
 @socketio.on('join_chat')

@@ -121,34 +121,32 @@
   
   // When the "Submit Request with an Image" button is clicked.
   document.getElementById('submit-request-btn').addEventListener('click', function() {
-    var fileInput = document.getElementById('submit-image-file');
-    if (!fileInput.files || fileInput.files.length === 0) {
-      alert("Please select an image to upload.");
-      return;
-    }
     var file = fileInput.files[0];
     var formData = new FormData();
     formData.append('file', file);
-    
+
     fetch('/upload_image?chat_id=' + chatId, {
-      method: 'POST',
-      body: formData
+    method: 'POST',
+    body: formData
     })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success && data.image_url) {
-        socket.emit('send_chat_message', {
-          'chat_id': chatId,
-          'sender': "{{ session['username'] }}",
-          'message': data.image_url,
-          'type': "image"
-        });
-        // Clear file input and image preview after sending.
-        fileInput.value = "";
-        document.getElementById('preview-container').innerHTML = "";
-      } else {
-        alert("Image upload failed: " + (data.error || "Unknown error"));
-      }
+    .then(response => {
+    // You can check the response status or text here instead of JSON.
+    if (!response.ok) {
+        throw new Error("Server error: " + response.status);
+    }
+    return response.text(); // or simply ignore if you do not need the response content
+    })
+    .then(() => {
+    // You can now perform any actions after a successful upload.
+    socket.emit('send_chat_message', {
+        'chat_id': chatId,
+        'sender': "{{ session['username'] }}",
+        'message': "Image successfully uploaded!",
+        'type': "text"
+    });
+    // Clear file input and image preview after sending.
+    fileInput.value = "";
+    document.getElementById('preview-container').innerHTML = "";
     })
     .catch(err => alert("Error uploading image: " + err));
   });
