@@ -4,13 +4,39 @@
 {% block content %}
   <h2>Welcome, Tenant</h2>
   
-  <h4>Incoming Requests</h4>
+  <!-- Section for pending issues -->
+  <h4>Pending Issues</h4>
+    <ul class="list-group">
+      {% for issue in pending_issues %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          {{ issue.label }} - <span class="badge badge-warning">{{ issue.status }}</span>
+          <!-- A form is used so that we can use POST to update the issue -->
+          <form action="{{ url_for('tenant.solve_issue', issue_id=issue.id) }}" method="POST" style="margin:0;">
+            <button type="submit" class="btn btn-sm btn-primary">Solve</button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+  <hr>
+  
+  <!-- Section for resolved issues -->
+  <h4>Resolved Issues</h4>
+    <ul class="list-group">
+      {% for issue in resolved_issues %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          {{ issue.label }} - <span class="badge badge-success">{{ issue.status }}</span>
+          <!-- No solve button here -->
+        </li>
+      {% endfor %}
+    </ul>
+  <hr>
+  
+  <!-- Existing content for requests and current landlord -->
   {% if requests %}
     <ul class="list-group">
       {% for req in requests %}
         <li class="list-group-item d-flex justify-content-between align-items-center">
           Request from: {{ req.landlord_email }}
-          <!-- Accept link will call a route to update the request -->
           <a href="{{ url_for('tenant.accept_request', request_id=req.id) }}" class="btn btn-sm btn-success">Accept</a>
         </li>
       {% endfor %}
@@ -18,8 +44,6 @@
   {% else %}
     <p>No new requests.</p>
   {% endif %}
-  
-  <hr>
   
   {% if current_landlord %}
     <h4>Current Landlord</h4>

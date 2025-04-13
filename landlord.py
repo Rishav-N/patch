@@ -12,6 +12,7 @@ db = firestore.client()
 def dashboard_landlord():
     if 'username' in session and session.get('role') == 'landlord':
         landlord_uid = session.get('uid')
+        # Get the attached tenants from the subcollection.
         tenants_ref = db.collection('users').document(landlord_uid).collection('tenants')
         tenants_docs = tenants_ref.stream()
         tenants = []
@@ -19,10 +20,28 @@ def dashboard_landlord():
             t = doc.to_dict()
             t['uid'] = doc.id
             tenants.append(t)
-        return render_template('landlord_dashboard.html', tenants=tenants)
+        
+        # Query issues for each tenant.
+        landlord_issues = []
+        # Assumes that issues are stored in a global collection "issues" where each document has a "tenant" field (tenant uid).
+        for tenant in tenants:
+            issues_query = db.collection('issues').where('tenant', '==', tenant['uid']).stream()
+            for doc in issues_query:
+                issue = doc.to_dict()
+                issue['id'] = doc.id
+                # Attach the tenant's email so the landlord can see who reported the issue.
+                issue['tenant_email'] = tenant.get('email')
+                landlord_issues.append(issue)
+                
+        return render_template(
+            'landlord_dashboard.html',
+            tenants=tenants,
+            landlord_issues=landlord_issues
+        )
     else:
         flash("You must be logged in as a landlord to access that page.", "danger")
         return redirect(url_for('auth.login'))
+
 
 @landlord_bp.route('/landlord/chat')
 def landlord_chat():

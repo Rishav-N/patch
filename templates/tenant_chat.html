@@ -129,9 +129,24 @@
     .then(response => response.json())
     .then(data => {
       if (data.success) {
-        alert("Issue Detected: " + data.label);
-        fileInput.value = "";
-        document.getElementById('preview-container').innerHTML = "";
+        fetch('/addIssue', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ label: data.label })
+        })
+        .then(response => response.json())
+        .then(issueData => {
+          if (issueData.success) {
+            alert("Issue added: " + issueData.label);
+            fileInput.value = "";
+            document.getElementById('preview-container').innerHTML = "";
+          } else {
+            alert("Failed to add issue: " + (issueData.error || "Unknown error"));
+          }
+        })
+        .catch(err => alert("Error adding issue: " + err));
       } else {
         alert("Image upload failed: " + (data.error || "Unknown error"));
       }
