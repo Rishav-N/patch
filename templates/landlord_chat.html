@@ -7,7 +7,6 @@
     <div class="card-body d-flex flex-column">
       <h4 class="mb-4 text-center">Landlord Chat Room</h4>
 
-      <!-- Dropdown to select an attached tenant -->
       <div class="form-group">
         <label for="tenantSelect">Select Tenant:</label>
         <select id="tenantSelect" class="form-control">
@@ -18,10 +17,8 @@
         </select>
       </div>
       
-      <!-- Chat Section: initially hidden -->
       <div id="chat-section" style="display:none;">
         <div id="chat-window" class="mb-4 p-3 d-flex flex-column bg-light border rounded" style="height:400px; overflow-y:auto;">
-          <!-- Chat messages will appear here -->
         </div>
         
         <div class="input-group">
@@ -41,42 +38,31 @@
   var socket = io();
   var currentChatId = "";
 
-  // When the landlord selects a tenant from the dropdown.
   document.getElementById('tenantSelect').addEventListener('change', function() {
     var tenantUid = this.value;
     if (tenantUid === "") {
-      // Hide chat section if no tenant selected
       document.getElementById('chat-section').style.display = "none";
       currentChatId = "";
       return;
     }
-    // Generate chat room ID by concatenating landlord's UID and the selected tenant's UID.
     var landlordUid = "{{ session['uid'] }}";
     currentChatId = landlordUid + "_" + tenantUid;
     
-    // Show the chat section.
     document.getElementById('chat-section').style.display = "block";
     
-    // Join the corresponding chat room.
     socket.emit('join_chat', { 'chat_id': currentChatId });
     
-    // Load last messages for this chat room.
     loadChatMessages(currentChatId);
   });
 
-  // A helper that creates a bubble with the same style as tenant chat.
   function createChatBubble(msg) {
     var div = document.createElement('div');
-    // If the message sender is the current landlord user, use .tenant-message style
-    // (so your own messages are tinted blue on the right).
     if (msg.sender === "{{ session['username'] }}") {
       div.classList.add('tenant-message');
     } else {
-      // Otherwise use .landlord-message style (light gray bubble on the left).
       div.classList.add('landlord-message');
     }
 
-    // If there's an image or other message type, adapt as needed. For now just text:
     if (msg.type === "image") {
       div.innerHTML = "<strong>" + msg.sender + ":</strong><br><img src='" + msg.message + "' style='max-width:200px;' />";
     } else {
@@ -99,7 +85,6 @@
       });
   }
 
-  // Listen for live chat messages from Socket.IO
   socket.on('chat_message', function(data) {
     if (data.chat_id === currentChatId) {
       var chatWindow = document.getElementById('chat-window');
@@ -109,7 +94,6 @@
     }
   });
 
-  // Send a chat message when the send button is clicked.
   document.getElementById('chat-send-btn').addEventListener('click', function() {
     if (!currentChatId) return;
     var input = document.getElementById('chat-message-input');
@@ -125,7 +109,6 @@
     }
   });
 
-  // Also send on Enter key press.
   document.getElementById('chat-message-input').addEventListener('keydown', function(e) {
     if (e.key === "Enter") {
       document.getElementById('chat-send-btn').click();

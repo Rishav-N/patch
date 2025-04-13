@@ -5,7 +5,6 @@
 <div class="container">
   <h2 class="mb-4">Welcome, Landlord</h2>
 
-  <!-- Send Request Form -->
   <div class="card mb-4">
     <div class="card-header bg-primary text-white">
       <h5 class="mb-0">Send Request to Tenant</h5>
@@ -22,7 +21,6 @@
     </div>
   </div>
 
-  <!-- Attached Tenants List (like old code) -->
   <div class="card mb-4">
     <div class="card-header bg-secondary text-white">
       <h5 class="mb-0">Attached Tenants</h5>
@@ -42,7 +40,6 @@
     </div>
   </div>
 
-  <!-- Select Tenant Dropdown -->
   <div class="card mb-4">
     <div class="card-header bg-info text-white">
       <h5 class="mb-0">View Tenant Issues</h5>
@@ -66,7 +63,6 @@
   </div>
 
   {% if selected_tenant_email %}
-    <!-- Pending Issues for Selected Tenant -->
     <div class="card mb-4">
       <div class="card-header bg-warning text-dark">
         <h5 class="mb-0">Pending Issues for {{ selected_tenant_email }}</h5>
@@ -95,7 +91,6 @@
       </div>
     </div>
 
-    <!-- Resolved Issues for Selected Tenant -->
     <div class="card mb-4">
       <div class="card-header bg-success text-white">
         <h5 class="mb-0">Resolved Issues for {{ selected_tenant_email }}</h5>

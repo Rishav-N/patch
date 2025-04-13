@@ -1,4 +1,3 @@
-# tenant.py
 import os
 from flask import Blueprint, render_template, redirect, url_for, session, flash, jsonify, request, current_app, send_file, abort
 import firebase_admin
@@ -6,16 +5,14 @@ from firebase_admin import firestore
 from io import BytesIO
 from docx import Document
 
-# Roboflow Inference SDK
 from inference_sdk import InferenceHTTPClient
 
 tenant_bp = Blueprint('tenant', __name__, template_folder='templates')
 db = firestore.client()
 
-# Initialize Roboflow Client
 rf_client = InferenceHTTPClient(
     api_url="https://detect.roboflow.com",
-    api_key="OMzWXPHBONpUpBxpEqDG"  # <-- Replace this with your real API key
+    api_key="OMzWXPHBONpUpBxpEqDG"  
 )
 
 @tenant_bp.route('/tenant/dashboard')
@@ -26,7 +23,6 @@ def tenant_dashboard():
     tenant_email = session.get('username')
     tenant_uid = session.get('uid')
     
-    # Query pending requests.
     requests_query = db.collection('requests') \
                        .where('tenant_email', '==', tenant_email) \
                        .where('status', '==', 'pending') \
@@ -37,7 +33,6 @@ def tenant_dashboard():
         req['id'] = doc.id
         requests_list.append(req)
     
-    # Query issues for the current tenant.
     issues_query = db.collection('issues') \
                      .where('tenant', '==', tenant_uid) \
                      .stream()
@@ -47,11 +42,9 @@ def tenant_dashboard():
         issue['id'] = doc.id
         issues_list.append(issue)
     
-    # Split issues into pending and resolved.
     pending_issues = [issue for issue in issues_list if issue.get('status') == 'pending']
     resolved_issues = [issue for issue in issues_list if issue.get('status') == 'resolved']
     
-    # Get tenant document to retrieve the current landlord info.
     tenant_doc = db.collection('users').document(tenant_uid).get().to_dict()
     current_landlord = tenant_doc.get('landlord') if tenant_doc and 'landlord' in tenant_doc else None
     current_landlord_uid = tenant_doc.get('landlord_uid') if tenant_doc and 'landlord_uid' in tenant_doc else None
@@ -67,26 +60,22 @@ def tenant_dashboard():
 
 @tenant_bp.route('/tenant/download_report/<issue_id>')
 def download_report(issue_id):
-    # Fetch the issue document from Firestore.
     issue_ref = db.collection("issues").document(issue_id)
     issue = issue_ref.get()
     if not issue.exists:
         abort(404, description="Issue not found.")
     issue_data = issue.to_dict()
     
-    # Retrieve the legal report from the "ai_advice" field.
     ai_advice = issue_data.get("ai_advice")
     if not ai_advice:
         abort(404, description="Legal report not available for this issue.")
     
-    # Create a DOCX file in memory.
     document = Document()
     document.add_paragraph(ai_advice)
     file_stream = BytesIO()
     document.save(file_stream)
     file_stream.seek(0)
     
-    # Return the DOCX file as an attachment.
     return send_file(
         file_stream,
         as_attachment=True,
@@ -104,18 +93,15 @@ def solve_issue(issue_id):
         return jsonify({"success": False, "error": "User not logged in"}), 401
 
     try:
-        # Get a reference to the issue document.
         issue_ref = db.collection("issues").document(issue_id)
         issue = issue_ref.get()
         if not issue.exists:
             return jsonify({"success": False, "error": "Issue not found"}), 404
 
         issue_data = issue.to_dict()
-        # Optionally verify that this issue belongs to the current tenant.
         if issue_data.get("tenant") != tenant_uid:
             return jsonify({"success": False, "error": "Not authorized"}), 403
 
-        # Update the status to resolved.
         issue_ref.update({"status": "resolved"})
 
         return redirect(url_for('tenant.tenant_dashboard'))

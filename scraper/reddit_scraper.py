@@ -3,8 +3,8 @@ import requests
 import os
 
 reddit = praw.Reddit(
-    client_id="L__B0xUG71WhO6ec7ocmXQ",   # YOUR client_id
-    client_secret="O5ngYRTxBrPMSWD1XDl4TQb-aQXyDg",  # YOUR client_secret
+    client_id="L__B0xUG71WhO6ec7ocmXQ",   
+    client_secret="O5ngYRTxBrPMSWD1XDl4TQb-aQXyDg", 
     user_agent="pest-scraper-script by u/Character_Shoe_9475"
 )
 search_terms = [
