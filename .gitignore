@@ -1,0 +1,4 @@
+.env
+firebase_key.json
+uploads/
+__pycache__/
