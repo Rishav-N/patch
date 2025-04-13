@@ -6,3 +6,4 @@ python-dotenv==1.0.1
 firebase-admin==6.2.0
 flask-socketio==5.3.4
 eventlet==0.33.3
+pip install google-generativeai
