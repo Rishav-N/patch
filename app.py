@@ -50,11 +50,11 @@ def chat():
 
 
 # Helper function to get advice from OpenAI
-def get_ai_advice_from_label(label):
+def get_ai_advice_from_label(user, state, label):
     try:
         response = client.models.generate_content(
             model="gemini-2.0-flash",
-            contents=[{"text": f"Give friendly, practical advice for this apartment maintenance issue: {label}."}]
+            contents=[{"text": f" : {label}."}]
         )
         return response.text.strip()
     except Exception as e:
@@ -208,20 +208,7 @@ def enforce_message_limit(chat_id, limit=10):
         for i in range(num_to_delete):
             messages[i].reference.delete()
 
-# New Route: Get Advice Separately
-@app.route('/get_advice', methods=['POST'])
-def get_advice():
-    try:
-        data = request.get_json()
-        label = data.get('label')
-        if not label:
-            return jsonify({'success': False, 'error': 'No label provided'}), 400
-        
-        advice = get_ai_advice_from_label(label)
-        return jsonify({'success': True, 'advice': advice})
-    
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+
 
 if __name__ == '__main__':
     socketio.run(app, debug=True)

@@ -19,7 +19,10 @@ def home():
 def signup():
     if request.method == 'POST':
         email = request.form['email']
+        username = request.form['username']
         password = request.form['password']
+        country = request.form['country']
+        state = request.form['state']
         role = request.form['role']
         try:
             # Create user in Firebase Authentication.
@@ -27,12 +30,16 @@ def signup():
             # Store the user in Firestore using the UID as document ID.
             db.collection('users').document(user.uid).set({
                 'email': email,
+                'username': username,
+                'country': country,
+                'state': state,
                 'role': role,
             })
             return redirect(url_for('auth.login'))
         except Exception as e:
             return f"Error creating user: {e}"
     return render_template('signup.html')
+
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -48,6 +55,7 @@ def login():
             session['username'] = email
             session['role'] = user_data.get('role')
             session['uid'] = user.uid
+            
             if session.get('role') == 'tenant':
                 return redirect(url_for('tenant.tenant_dashboard'))
             elif session.get('role') == 'landlord':

@@ -91,9 +91,6 @@ def solve_issue(issue_id):
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
-if __name__ == '__main__':
-    app.run(debug=True)
-
 @tenant_bp.route('/tenant/chat')
 def tenant_chat():
     if 'username' not in session or session.get('role') != 'tenant':
