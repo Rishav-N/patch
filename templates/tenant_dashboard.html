@@ -2,90 +2,112 @@
 {% block title %}Tenant Dashboard{% endblock %}
 
 {% block content %}
-  <h2>Welcome, Tenant</h2>
-  
-  <!-- Section for pending issues -->
-  <h4>Pending Issues</h4>
-  {% if pending_issues %}
-    <ul class="list-group">
-      {% for issue in pending_issues %}
-        <li class="list-group-item">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              {{ issue.label }} - <span class="badge badge-warning">{{ issue.status }}</span>
-            </div>
-            <div>
-              <!-- Solve form if desired -->
+<div class="container">
+  <h2 class="mb-4">Welcome, Tenant</h2>
+
+  <!-- Pending Issues -->
+  <div class="card mb-4">
+    <div class="card-header bg-warning text-dark">
+      <h5 class="mb-0">Pending Issues</h5>
+    </div>
+    <div class="card-body">
+      {% if pending_issues %}
+        <ul class="list-group list-group-flush">
+          {% for issue in pending_issues %}
+          <li class="list-group-item">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <i class="fas fa-exclamation-circle"></i> <strong>{{ issue.label }}</strong>
+                <span class="badge badge-warning ml-2">{{ issue.status }}</span>
+              </div>
               <form action="{{ url_for('tenant.solve_issue', issue_id=issue.id) }}" method="POST" style="margin:0;">
                 <button type="submit" class="btn btn-sm btn-primary">Solve</button>
               </form>
             </div>
-          </div>
-          <div class="mt-2">
-            <small>
-              You are able to file this legal report to the authorities in {{ issue.days }} days if the issue is not fixed.
-            </small>
-            <br>
-            <a href="{{ url_for('tenant.download_report', issue_id=issue.id) }}" class="btn btn-link p-0" download="legal_report.docx">
-              Download Legal Report
-            </a>
-          </div>
-        </li>
-      {% endfor %}
-    </ul>
-  {% else %}
-    <p>No pending issues.</p>
-  {% endif %}
-  
-  <hr>
-  
-  <!-- Section for resolved issues -->
-  <h4>Resolved Issues</h4>
-  {% if resolved_issues %}
-    <ul class="list-group">
-      {% for issue in resolved_issues %}
-        <li class="list-group-item">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              {{ issue.label }} - <span class="badge badge-success">{{ issue.status }}</span>
+            <div class="mt-2">
+              <small class="text-muted">You can file this legal report to authorities in {{ issue.days }} days if not fixed.</small>
+              <br>
+              <a href="{{ url_for('tenant.download_report', issue_id=issue.id) }}" class="btn btn-link p-0" download="legal_report.docx">
+                <i class="fas fa-download"></i> Download Legal Report
+              </a>
             </div>
-          </div>
-          <div class="mt-2">
-            <small>
-              You are able to file this legal report to the authorities in {{ issue.days }} days if the issue is not fixed.
-            </small>
-            <br>
-            <a href="{{ url_for('tenant.download_report', issue_id=issue.id) }}" class="btn btn-link p-0" download="legal_report.docx">
-              Download Legal Report
+          </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-muted">No pending issues.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Resolved Issues -->
+  <div class="card mb-4">
+    <div class="card-header bg-success text-white">
+      <h5 class="mb-0">Resolved Issues</h5>
+    </div>
+    <div class="card-body">
+      {% if resolved_issues %}
+        <ul class="list-group list-group-flush">
+          {% for issue in resolved_issues %}
+          <li class="list-group-item">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <i class="fas fa-check-circle"></i> <strong>{{ issue.label }}</strong>
+                <span class="badge badge-success ml-2">{{ issue.status }}</span>
+              </div>
+            </div>
+            <div class="mt-2">
+              <small class="text-muted">You can still file this legal report in {{ issue.days }} days if not fixed properly.</small>
+              <br>
+              <a href="{{ url_for('tenant.download_report', issue_id=issue.id) }}" class="btn btn-link p-0" download="legal_report.docx">
+                <i class="fas fa-download"></i> Download Legal Report
+              </a>
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-muted">No resolved issues.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- New Requests -->
+  <div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0">New Requests</h5>
+    </div>
+    <div class="card-body">
+      {% if requests %}
+        <ul class="list-group list-group-flush">
+          {% for req in requests %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            Request from: <strong>{{ req.landlord_email }}</strong>
+            <a href="{{ url_for('tenant.accept_request', request_id=req.id) }}" class="btn btn-sm btn-success">
+              Accept
             </a>
-          </div>
-        </li>
-      {% endfor %}
-    </ul>
-  {% else %}
-    <p>No resolved issues.</p>
-  {% endif %}
-  
-  <hr>
-  
-  <!-- Existing content for requests and current landlord -->
-  {% if requests %}
-    <ul class="list-group">
-      {% for req in requests %}
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-          Request from: {{ req.landlord_email }}
-          <a href="{{ url_for('tenant.accept_request', request_id=req.id) }}" class="btn btn-sm btn-success">Accept</a>
-        </li>
-      {% endfor %}
-    </ul>
-  {% else %}
-    <p>No new requests.</p>
-  {% endif %}
-  
-  {% if current_landlord %}
-    <h4>Current Landlord</h4>
-    <p>You are currently attached to: {{ current_landlord }}</p>
-  {% else %}
-    <p>You are not attached to any landlord yet.</p>
-  {% endif %}
+          </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-muted">No new requests.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Current Landlord -->
+  <div class="card mb-4">
+    <div class="card-header bg-info text-white">
+      <h5 class="mb-0">Current Landlord</h5>
+    </div>
+    <div class="card-body">
+      {% if current_landlord %}
+        <p>You are currently attached to: <strong>{{ current_landlord }}</strong></p>
+      {% else %}
+        <p class="text-muted">You are not attached to any landlord yet.</p>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
 {% endblock %}
