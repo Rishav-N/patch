@@ -1,8 +1,11 @@
 {% extends "base.html" %}
-{% set title = "Login - Patch" %}
 
 {% block content %}
-<div class="container-fluid vh-100">
+
+<!-- Black Top Bar -->
+<div class="top-bar"></div>
+
+<div class="container-fluid vh-100 with top bar">
   <div class="row h-100">
 
     <!-- Left Section (Form) -->
@@ -26,9 +29,10 @@
       </div>
     </div>
 
-    <!-- Right Section (Background Image) -->
-    <div class="col-md-6 d-none d-md-block right-section"></div>
+    <!-- Right Section (Full Image Background) -->
+    <div class="col-md-6 d-none d-md-block position-relative right-section"></div>
 
-  <!-- Link to the signup page -->
-  <p>Don't have an account? <a href="{{ url_for('auth.signup') }}">Sign up here</a></p>
+  </div>
+</div>
+
 {% endblock %}
