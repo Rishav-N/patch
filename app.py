@@ -2,11 +2,18 @@
 import os
 import smtplib
 import datetime
+import requests
+import openai
+from dotenv import load_dotenv
 from email.mime.text import MIMEText
 from flask import Flask, jsonify
 from flask_socketio import SocketIO, join_room, emit
 import firebase_admin
 from firebase_admin import credentials, firestore
+
+# Load environment variables
+load_dotenv()
+openai.api_key = os.getenv('OPENAI_API_KEY')
 
 # Initialize Firebase Admin SDK with your service account key.
 cred = credentials.Certificate('patch-40246-firebase-adminsdk-fbsvc-76101ed4f9.json')
@@ -65,8 +72,73 @@ def upload_image():
         return jsonify({"success": True, "image_url": image_url})
     return jsonify({"success": False, "error": "No file uploaded"})
 
-# Socket.IO Events
+@app.route('/analyze_issue', methods=['POST'])
+def analyze_issue():
+    from flask import request, jsonify
 
+    chat_id = request.args.get('chat_id')
+    file = request.files.get('file')
+
+    if not file:
+        return jsonify({'success': False, 'error': 'No file uploaded'})
+
+    try:
+        # Send the uploaded file to your model server
+        model_server_url = 'http://localhost:5000/predict'
+        response = requests.post(
+            model_server_url,
+            files={'file': (file.filename, file.stream, file.mimetype)}
+        )
+
+        if response.status_code != 200:
+            return jsonify({'success': False, 'error': 'Prediction failed'}), 500
+
+        prediction = response.json()
+        label = prediction.get('label')
+
+        # Get advice from OpenAI based on label
+        advice = get_ai_advice_from_label(label)
+
+        # Prepare a chat message
+        full_message = f"Issue detected: {label}.\nAdvice: {advice}"
+
+        # Save the message into the Firestore chat
+        message_data = {
+            'sender': 'AI Assistant',
+            'message': full_message,
+            'type': 'analysis',
+            'timestamp': firestore.SERVER_TIMESTAMP,
+            'chat_id': chat_id
+        }
+
+        db.collection('chats').document(chat_id).collection('messages').add(message_data)
+
+        return jsonify({"success": True, "message": full_message})
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# Helper function to get advice from OpenAI
+def get_ai_advice_from_label(label):
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[
+                {
+                    "role": "user",
+                    "content": f"Give friendly, practical advice for this apartment maintenance issue: {label}."
+                }
+            ],
+            max_tokens=300
+        )
+        advice = response['choices'][0]['message']['content']
+        return advice.strip()
+
+    except Exception as e:
+        print(f"OpenAI error: {e}")
+        return "Unable to generate advice at the moment."
+
+# Socket.IO Events
 @socketio.on('join_chat')
 def join_chat(data):
     chat_id = data.get('chat_id')
