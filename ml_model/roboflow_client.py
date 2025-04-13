@@ -13,7 +13,7 @@ CLIENT = InferenceHTTPClient(
 def predict_image(file):
     temp_path = "temp_upload.jpg"  # Temp save location
     file.save(temp_path)  # Save incoming file
-
+q
     result = CLIENT.infer(temp_path, model_id="classification-house-problems/1")
 
     # Clean up: Delete temp file
