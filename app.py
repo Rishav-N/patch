@@ -1,11 +1,19 @@
 # app.py
-from flask import Flask, render_template, request, redirect, url_for, session
 from flask_socketio import SocketIO, join_room, emit
 import firebase_admin
 from firebase_admin import credentials, auth, firestore
 import requests
 from flask import jsonify
+import os
+import smtplib
+import base64
+import openai
+import datetime
+from dotenv import load_dotenv
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 
+load_dotenv()
+openai.api_key = os.environ.get('OPENAI_API_KEY')
 
 cred = credentials.Certificate('firebase_key.json')
 firebase_admin.initialize_app(cred)
@@ -66,45 +74,35 @@ def signup():
 
 #add routes that listens for POST requests at /upload-image. 
 #returns in an JSON format
-@app.route('/upload-image', methods=['POST'])
-def upload_image():
-    # Check if the POST request actually includes a file
+@app.route('/analyze-upload-image', methods=['POST'])
+def analyze_upload_image():
     if 'file' not in request.files:
         return jsonify({'error': 'No file uploaded'}), 400
     file = request.files['file']
 
-    # The URL of the model server that will predict the result
-    model_server_url = 'http://localhost:5000/predict'  # Your model server URL
+    model_server_url = 'http://localhost:5000/predict'
     try:
-        # Send the uploaded file to the model server
         response = requests.post(
             model_server_url,
             files={'file': (file.filename, file.stream, file.mimetype)}
         )
 
-        # If the model server responded successfully (HTTP 200 OK)
         if response.status_code == 200:
-            # Parse prediction from model server
             prediction = response.json()
             label = prediction.get('label')
             confidence = prediction.get('confidence')
 
-            # Return the prediction result to the user in a nice format
-            return jsonify({'analysis': f"{label} ({confidence:.2f} confidence)"})
+            file.stream.seek(0)  # Reset before reusing
+            advice = get_ai_advice_with_image(file)
+
+            return jsonify({
+                'analysis': f"{label} ({confidence:.2f} confidence)",
+                'advice': advice
+            })
         else:
             return jsonify({'error': 'Failed to get prediction'}), 500
-
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-
-@app.route('/')
-def home():
-    return render_template('index.html')
-
-@app.route('/chat')
-def chat():
-    return render_template('chat.html')
 
 def check_openai_balance():
     try:
