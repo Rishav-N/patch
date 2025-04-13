@@ -51,8 +51,16 @@ def signup():
                 'email': email,
                 'role': role,
             })
+            
+            # Auto-login: Set session immediately
+            session['username'] = email
+            session['role'] = role
 
-            return redirect(url_for('login'))
+            # Redirect to the right dashboard
+            if role == 'tenant':
+                return redirect(url_for('tenant_dashboard'))
+            else:
+                return redirect(url_for('landlord_dashboard'))
 
         except Exception as e:
             return f"Error creating user: {e}"
