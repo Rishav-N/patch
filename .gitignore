@@ -12,8 +12,4 @@ dist/
 *.egg-info/
 
 # Sensitive files (Firebase credentials)
-<<<<<<< HEAD
-patch-40246-firebase-adminsdk-fbsvc-75e8c8f76f.json
-=======
-patch-40246-firebase-adminsdk-fbsvc-75e8c8f76f.json
->>>>>>> f4a8643436ff36513ae8f076e7d080dd1006cfa8
+patch-40246-firebase-adminsdk-fbsvc-76101ed4f9.json
