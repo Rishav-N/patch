@@ -6,6 +6,9 @@ __pycache__/
 # Virtual environment directories (update as necessary)
 venv/
 
+
+firebase_key.json
+
 # Distribution files
 build/
 dist/
@@ -13,3 +16,5 @@ dist/
 
 # Sensitive files (Firebase credentials)
 patch-40246-firebase-adminsdk-fbsvc-76101ed4f9.json
+
+.env

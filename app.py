@@ -2,23 +2,17 @@
 import os
 import smtplib
 import datetime
-import tempfile
+import requests
+import openai
+from dotenv import load_dotenv
 from email.mime.text import MIMEText
 from flask import Flask, jsonify, request
 from flask_socketio import SocketIO, join_room, emit
 import firebase_admin
 from firebase_admin import credentials, firestore
-from appwrite.client import Client
-from appwrite.services.storage import Storage
-from appwrite.permission import Permission 
-from appwrite.role import Role  
-import uuid      
-import io
-from appwrite.id import ID 
-
 
 # Initialize Firebase Admin SDK with your service account key.
-cred = credentials.Certificate('patch-40246-firebase-adminsdk-fbsvc-76101ed4f9.json')
+cred = credentials.Certificate('firebase_key.json')
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
@@ -64,7 +58,6 @@ def load_chat(chat_id):
         return jsonify({"messages": [], "error": str(e)})
     
 # Socket.IO Events
-
 @socketio.on('join_chat')
 def join_chat(data):
     chat_id = data.get('chat_id')
