@@ -48,7 +48,7 @@ def predict():
     # Return prediction
     return jsonify({
         'label': label,
-        'confidence': confidence
+        'confidence': confidence,
     })
 
 if __name__ == '__main__':
