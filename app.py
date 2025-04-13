@@ -31,11 +31,12 @@ rf_client = InferenceHTTPClient(
 from auth import auth_bp
 from tenant import tenant_bp
 from landlord import landlord_bp
+from profilepage import profile_bp
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(tenant_bp)
 app.register_blueprint(landlord_bp)
-
+app.register_blueprint(profile_bp)
 
 # Route: Role-Based Chat Redirection
 @app.route('/chat')
