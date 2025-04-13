@@ -11,6 +11,8 @@ import openai
 import datetime
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
+from ml_model.roboflow_client import predict_image
+
 
 load_dotenv()
 openai.api_key = os.environ.get('OPENAI_API_KEY')
@@ -19,7 +21,7 @@ cred = credentials.Certificate('firebase_key.json')
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static')
 app.config['SECRET_KEY'] = 'your_secret_key'
 socketio = SocketIO(app)
 
@@ -78,31 +80,34 @@ def signup():
 def analyze_upload_image():
     if 'file' not in request.files:
         return jsonify({'error': 'No file uploaded'}), 400
+
     file = request.files['file']
 
-    model_server_url = 'http://localhost:5000/predict'
-    try:
-        response = requests.post(
-            model_server_url,
-            files={'file': (file.filename, file.stream, file.mimetype)}
-        )
+    # Call Roboflow model directly
+    label, confidence = predict_image(file)
 
-        if response.status_code == 200:
-            prediction = response.json()
-            label = prediction.get('label')
-            confidence = prediction.get('confidence')
+    # Reset file stream for OpenAI image advice
+    file.stream.seek(0)
 
-            file.stream.seek(0)  # Reset before reusing
-            advice = get_ai_advice_with_image(file)
+    advice = get_ai_advice_with_image(file)
 
-            return jsonify({
-                'analysis': f"{label} ({confidence:.2f} confidence)",
-                'advice': advice
-            })
-        else:
-            return jsonify({'error': 'Failed to get prediction'}), 500
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    return jsonify({
+        'analysis': f"{label} ({confidence:.2f} confidence)",
+        'advice': advice
+    })
+
+
+@app.route('/predict', methods=['POST'])
+def predict():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No image provided'}), 400
+
+    file = request.files['file']
+
+    label, confidence = predict_image(file)
+
+    return jsonify({'label': label, 'confidence': confidence})
+
 
 def check_openai_balance():
     try:

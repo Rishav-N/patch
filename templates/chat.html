@@ -1,42 +1,37 @@
 <!-- templates/chat.html -->
 {% extends "base.html" %}
 
-{% block title %}Chat - My App{% endblock %}
+{% block title %}Chat - Patch{% endblock %}
 
 {% block navbar_title %}Chat Room{% endblock %}
 
 {% block content %}
-  <!-- Chat Card Container -->
-  <div class="card">
+<div class="container py-4">
+  <div class="card shadow-sm rounded-lg">
     <div class="card-body">
-      <!-- Chat Window -->
-      <div id="chat-window" class="mb-3" style="height: 400px; overflow-y: scroll; border: 1px solid #ddd; padding: 15px; background-color: #f8f9fa;">
+      <h4 class="mb-3 text-center">Chat Room</h4>
+
+      <div id="chat-window" class="mb-3 p-3 border rounded overflow-auto bg-light" style="height: 400px;">
         <!-- Chat messages will appear here -->
       </div>
-      
-      <!-- Image Preview Section: Placed below the chat window and above the input -->
-      <div id="image-preview-section" style="display: none; margin-top: 10px; margin-bottom: 10px;">
-        <h6>Image Preview:</h6>
-        <img id="image-preview" src="" alt="Preview" style="max-width: 100%; max-height: 200px; border: 1px solid #ddd; padding: 5px; background: #fff;">
+
+      <div id="image-preview-section" class="mb-3" style="display: none;">
+        <small class="text-muted">Image Preview:</small>
+        <img id="image-preview" class="img-fluid border rounded" style="max-height: 200px;">
       </div>
-      
-      <!-- Input Group: Text Message, Image Icon, and Send Button -->
+
       <div class="input-group">
-        <input type="text" class="form-control" id="message-input" placeholder="Type your message..." aria-label="Message">
-        <div class="input-group-append">
-          <button class="btn btn-outline-secondary" type="button" id="image-icon-button" title="Upload Image">
-            <i class="fas fa-image"></i>
-          </button>
-        </div>
-        <div class="input-group-append">
-          <button class="btn btn-primary" type="button" id="send-button">Send</button>
-        </div>
+        <input type="text" class="form-control" id="message-input" placeholder="Type your message...">
+        <button class="btn btn-outline-secondary" id="image-icon-button">
+          <i class="fas fa-image"></i>
+        </button>
+        <button class="btn btn-primary" id="send-button">Send</button>
       </div>
-      
-      <!-- Hidden file input for image uploads -->
+
       <input type="file" id="hidden-image-upload" accept="image/*" style="display: none;">
     </div>
   </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
