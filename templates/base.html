@@ -1,7 +1,6 @@
-
 <!-- templates/base.html -->
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>{% block title %}Patch{% endblock %}</title>
@@ -9,6 +8,7 @@
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
   <!-- Font Awesome for icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <!-- Custom CSS -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <!-- Socket.IO -->
   <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
@@ -64,10 +64,12 @@
   </div>
 
   <!-- Top Navigation Bar -->
-  <nav class="navbar navbar-light bg-light">
-    <!-- Hamburger icon to toggle sidebar -->
-    <span class="menu-toggle" onclick="openNav()">&#9776;</span>
-    <span class="navbar-brand mb-0 h1">{% block navbar_title %}Patch{% endblock %}</span>
+  <nav class="navbar navbar-light bg-light d-flex justify-content-between align-items-center">
+    <div>
+      <!-- Hamburger icon to toggle sidebar -->
+      <span class="menu-toggle" onclick="openNav()">&#9776;</span>
+      <span class="navbar-brand mb-0 h1">{% block navbar_title %}Patch{% endblock %}</span>
+    </div>
   </nav>
 
   <!-- Main Content Area -->
@@ -85,12 +87,15 @@
     }
   </script>
   {% block scripts %}{% endblock %}
+
+  <!-- Dark Mode Toggle Script -->
   <script>
-    // On page load, read from localStorage
+    // On page load, set dark mode if saved in localStorage
     if (localStorage.getItem('theme') === 'dark') {
       document.documentElement.setAttribute('data-theme', 'dark');
     }
     
+    // Add event listener for the dark mode toggle button
     const toggleButton = document.getElementById('dark-mode-toggle');
     if (toggleButton) {
       toggleButton.addEventListener('click', function() {
@@ -104,6 +109,6 @@
       });
     }
   </script>
-  
+
 </body>
 </html>

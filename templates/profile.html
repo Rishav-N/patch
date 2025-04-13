@@ -5,10 +5,9 @@
 <div class="d-flex justify-content-center align-items-center vh-100">
   <div class="card p-4 shadow-sm" style="max-width: 500px; width: 100%;">
     
-    <!-- Row for heading + toggle button -->
+
     <div class="d-flex align-items-center justify-content-between mb-3">
       <h2 class="fw-bold mb-0">Your Profile</h2>
-      <button id="dark-mode-toggle" class="btn btn-outline-secondary btn-sm">Toggle Dark Mode</button>
     </div>
     <hr>
 
@@ -65,23 +64,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
-  // If you're already storing the theme in localStorage, this snippet reads it:
-  if (localStorage.getItem('theme') === 'dark') {
-    document.documentElement.setAttribute('data-theme', 'dark');
-  }
 
-  const toggleButton = document.getElementById('dark-mode-toggle');
-  if (toggleButton) {
-    toggleButton.addEventListener('click', function() {
-      if (document.documentElement.getAttribute('data-theme') === 'dark') {
-        document.documentElement.removeAttribute('data-theme');
-        localStorage.setItem('theme', 'light');
-      } else {
-        document.documentElement.setAttribute('data-theme', 'dark');
-        localStorage.setItem('theme', 'dark');
-      }
-    });
-  }
-</script>
 {% endblock %}
