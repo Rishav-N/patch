@@ -1,0 +1,88 @@
+<!-- templates/base.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>{% block title %}My App{% endblock %}</title>
+  <!-- Bootstrap CSS CDN -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <!-- Socket.IO -->
+  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+  <style>
+    /* Sidebar Styles */
+    .sidenav {
+      height: 100%;
+      width: 0;
+      position: fixed;
+      z-index: 1000;
+      top: 0;
+      left: 0;
+      background-color: #111;
+      overflow-x: hidden;
+      transition: 0.5s;
+      padding-top: 60px;
+    }
+    .sidenav a {
+      padding: 8px 8px 8px 32px;
+      text-decoration: none;
+      font-size: 18px;
+      color: #818181;
+      display: block;
+      transition: 0.3s;
+    }
+    .sidenav a:hover {
+      color: #f1f1f1;
+    }
+    .sidenav .closebtn {
+      position: absolute;
+      top: 0;
+      right: 10px;
+      font-size: 36px;
+      color: #f1f1f1;
+    }
+    .menu-toggle {
+      font-size: 30px;
+      cursor: pointer;
+      color: #111;
+      padding: 10px;
+    }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <!-- Sidebar Navigation (hidden by default) -->
+  <div id="mySidenav" class="sidenav">
+    <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+    <a href="/">Home</a>
+    <a href="/chat">Chat</a>
+    <a href="/profile">Profile</a>
+    <a href="/settings">Settings</a>
+    <a href="/logout">Logout</a>
+  </div>
+
+  <!-- Top Navigation Bar -->
+  <nav class="navbar navbar-light bg-light">
+    <!-- Hamburger icon to toggle sidebar -->
+    <span class="menu-toggle" onclick="openNav()">&#9776;</span>
+    <span class="navbar-brand mb-0 h1">{% block navbar_title %}My App{% endblock %}</span>
+  </nav>
+
+  <!-- Main Content Area -->
+  <div class="container mt-4">
+    {% block content %}{% endblock %}
+  </div>
+
+  <script>
+    // Sidebar control functions
+    function openNav() {
+      document.getElementById("mySidenav").style.width = "250px";
+    }
+    function closeNav() {
+      document.getElementById("mySidenav").style.width = "0";
+    }
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
