@@ -1,9 +1,9 @@
 /* Base Reset + Clean Layout */
-
 body {
     font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f8f9fa;
-    color: #212529;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 h1, h2, h3, h4, h5 {
@@ -11,7 +11,7 @@ h1, h2, h3, h4, h5 {
 }
 
 a {
-    color: #4f46e5;
+    color: var(--primary-color);
     text-decoration: none;
 }
 
@@ -20,22 +20,21 @@ a:hover {
 }
 
 /* Card Styling */
-
 .card {
-    border: none;
-    border-radius: 0.75rem;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border-radius: 1rem;
 }
 
 /* Buttons */
-
 .btn-primary {
-    background-color: #4f46e5;
-    border-color: #4f46e5;
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .btn-primary:hover {
-    background-color: #4338ca;
+    background-color: #4338ca; /* Adjust as needed */
     border-color: #4338ca;
 }
 
@@ -46,18 +45,16 @@ a:hover {
 }
 
 /* Input Styling */
-
 input, select, textarea {
     border-radius: 0.5rem !important;
 }
 
 input:focus, select:focus, textarea:focus {
-    box-shadow: none;
-    border-color: #4f46e5;
+    box-shadow: 0 0 5px rgba(79,70,229, 0.5);
+    border-color: var(--primary-color);
 }
 
 /* Chat Window Styling */
-
 #chat-window {
     background-color: #f1f3f5;
     border-radius: 0.5rem;
@@ -65,7 +62,6 @@ input:focus, select:focus, textarea:focus {
 }
 
 /* Image Preview Styling */
-
 #image-preview {
     border-radius: 0.5rem;
     border: 1px solid #ddd;
@@ -73,17 +69,85 @@ input:focus, select:focus, textarea:focus {
     background-color: #fff;
 }
 
-/* Split Screen Login Background */
-
-.right-section {
-    background-image: url('/static/img/login-bg.png');
-    background-size: cover;          /* Cover ensures full space fill */
-    background-position: center;     /* Center the image */
-    background-repeat: no-repeat;    /* Prevent tiling */
-    height: 100vh;                   /* Full viewport height */
-    width: 100%;                     /* Full width of its container */
+/* Black Top Bar */
+.top-bar {
+    background-color: #000;
+    height: 50px;
+    width: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
 }
 
+/* Push content down to avoid overlap with the top bar */
+.with-top-bar {
+    padding-top: 50px;
+}
 
+/* Right Section Background (for login page) */
+.right-section {
+    background-image: url('/static/img/login-bg.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    height: 100vh;
+    width: 100%;
+}
 
-
+/* CSS Variables for Themes */
+/* Variables for Light Mode */
+:root {
+    --bg-color: #f8f9fa;
+    --text-color: #212529;
+    --primary-color: #4f46e5;
+  
+    /* New card variables */
+    --card-bg: #ffffff;
+    --card-border-color: #e0e0e0;
+  }
+  
+  /* Variables for Dark Mode */
+  [data-theme="dark"] {
+    --bg-color: #121212;
+    --text-color: #e0e0e0;
+    --primary-color: #8a9aff;
+  
+    /* Make the card dark gray in dark mode */
+    --card-bg: #2a2a2a;
+    --card-border-color: #444444;
+  }
+  
+  /* Global body & text colors */
+  body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  
+  /* Card styling */
+  .card {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    border: 1px solid var(--card-border-color);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border-radius: 1rem;
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  }
+  
+  /* Buttons, Inputs, etc. can remain as before, just ensuring they rely on the above variables where relevant. */
+  
+  /* Example: .btn-primary uses var(--primary-color) ... */
+  .btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+  }
+  
+  .btn-primary:hover {
+    background-color: #4338ca; /* or any darker purple */
+    border-color: #4338ca;
+  }
+  
+  /* ... and so on for other elements */
+  

@@ -85,5 +85,25 @@
     }
   </script>
   {% block scripts %}{% endblock %}
+  <script>
+    // On page load, read from localStorage
+    if (localStorage.getItem('theme') === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+    
+    const toggleButton = document.getElementById('dark-mode-toggle');
+    if (toggleButton) {
+      toggleButton.addEventListener('click', function() {
+        if (document.documentElement.getAttribute('data-theme') === 'dark') {
+          document.documentElement.removeAttribute('data-theme');
+          localStorage.setItem('theme', 'light');
+        } else {
+          document.documentElement.setAttribute('data-theme', 'dark');
+          localStorage.setItem('theme', 'dark');
+        }
+      });
+    }
+  </script>
+  
 </body>
 </html>

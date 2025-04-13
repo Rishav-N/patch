@@ -1,51 +1,87 @@
 {% extends "base.html" %}
-{% block title %}Profile{% endblock %}
+{% block title %}Profile - Patch{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-  <div class="card p-4 shadow-sm rounded-lg mx-auto" style="max-width: 600px;">
-    <h2 class="mb-4 text-center">Your Profile</h2>
+<div class="d-flex justify-content-center align-items-center vh-100">
+  <div class="card p-4 shadow-sm" style="max-width: 500px; width: 100%;">
     
+    <!-- Row for heading + toggle button -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <h2 class="fw-bold mb-0">Your Profile</h2>
+      <button id="dark-mode-toggle" class="btn btn-outline-secondary btn-sm">Toggle Dark Mode</button>
+    </div>
+    <hr>
+
     <form method="POST" action="{{ url_for('profilepage.profile') }}">
       <!-- Username -->
       <div class="mb-3">
-        <label for="username" class="form-label">Username</label>
-        <input type="text" id="username" name="username" class="form-control" 
-               value="{{ user.username }}" required>
+        <label class="form-label">Username</label>
+        <div class="input-group">
+          <span class="input-group-text" id="username-icon"><i class="fas fa-user"></i></span>
+          <input type="text" name="username" class="form-control" value="{{ user.username }}" required>
+        </div>
       </div>
-      
+
       <!-- Email -->
       <div class="mb-3">
-        <label for="email" class="form-label">Email</label>
-        <input type="email" id="email" name="email" class="form-control" 
-               value="{{ user.email }}" required>
+        <label class="form-label">Email</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+          <input type="email" name="email" class="form-control" value="{{ user.email }}" required>
+        </div>
       </div>
-      
+
       <!-- Password -->
       <div class="mb-3">
-        <label for="password" class="form-label">Password</label>
-        <!-- Using a password field; you might want to add logic to handle password updates separately -->
-        <input type="password" id="password" name="password" class="form-control" 
-               placeholder="Enter new password if you wish to change it">
+        <label class="form-label">New Password <small class="text-muted">(Optional)</small></label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="fas fa-lock"></i></span>
+          <input type="password" name="password" class="form-control" placeholder="Leave blank to keep current">
+        </div>
       </div>
-      
+
       <!-- State -->
       <div class="mb-3">
-        <label for="state" class="form-label">State</label>
-        <input type="text" id="state" name="state" class="form-control" 
-               value="{{ user.state }}" required>
+        <label class="form-label">State</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="fas fa-map-marker-alt"></i></span>
+          <input type="text" name="state" class="form-control" value="{{ user.state }}" required>
+        </div>
       </div>
-      
+
       <!-- Country -->
       <div class="mb-3">
-        <label for="country" class="form-label">Country</label>
-        <input type="text" id="country" name="country" class="form-control" 
-               value="{{ user.country }}" required>
+        <label class="form-label">Country</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="fas fa-globe"></i></span>
+          <input type="text" name="country" class="form-control" value="{{ user.country }}" required>
+        </div>
       </div>
-      
-      <!-- Submit Button -->
+
       <button type="submit" class="btn btn-primary w-100">Update Profile</button>
     </form>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // If you're already storing the theme in localStorage, this snippet reads it:
+  if (localStorage.getItem('theme') === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+  }
+
+  const toggleButton = document.getElementById('dark-mode-toggle');
+  if (toggleButton) {
+    toggleButton.addEventListener('click', function() {
+      if (document.documentElement.getAttribute('data-theme') === 'dark') {
+        document.documentElement.removeAttribute('data-theme');
+        localStorage.setItem('theme', 'light');
+      } else {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        localStorage.setItem('theme', 'dark');
+      }
+    });
+  }
+</script>
 {% endblock %}
