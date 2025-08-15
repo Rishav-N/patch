@@ -1,0 +1,132 @@
+<!-- templates/chat.html -->
+{% extends "base.html" %}
+
+{% block title %}Chat - Patch{% endblock %}
+
+{% block navbar_title %}Chat Room{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="card shadow-sm rounded-lg">
+    <div class="card-body">
+      <h4 class="mb-3 text-center">Chat Room</h4>
+
+      <div id="chat-window" class="mb-3 p-3 border rounded overflow-auto bg-light" style="height: 400px;">
+        <!-- Chat messages will appear here -->
+      </div>
+
+      <div id="image-preview-section" class="mb-3" style="display: none;">
+        <small class="text-muted">Image Preview:</small>
+        <img id="image-preview" class="img-fluid border rounded" style="max-height: 200px;">
+      </div>
+
+      <div class="input-group">
+        <input type="text" class="form-control" id="message-input" placeholder="Type your message...">
+        <button class="btn btn-outline-secondary" id="image-icon-button">
+          <i class="fas fa-image"></i>
+        </button>
+        <button class="btn btn-primary" id="send-button">Send</button>
+      </div>
+
+      <input type="file" id="hidden-image-upload" accept="image/*" style="display: none;">
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  <script>
+    // Initialize Socket.IO
+    var socket = io();
+    console.log("Socket.IO client script loaded");
+
+    var username = "User" + Math.floor(Math.random() * 1000);
+    var room = "general";
+    var selectedImageFile = null; // Holds the selected image file
+
+    // Join the chat room on page load
+    socket.emit('join', { username: username, room: room });
+
+    // Function to send text message and image if exists
+    function sendMessageAndImage() {
+      var messageInput = document.getElementById('message-input');
+      var message = messageInput.value;
+      
+      // Send text if provided
+      if (message.trim() !== "") {
+        socket.emit('message', { username: username, room: room, msg: message });
+      }
+      
+      // If an image is selected, send it to the server
+      if (selectedImageFile) {
+        var formData = new FormData();
+        formData.append('file', selectedImageFile);
+        fetch('/upload-image', {
+          method: 'POST',
+          body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+          console.log("AI Analysis result:", data.analysis);
+          socket.emit('message', { username: username, room: room, msg: "AI Analysis: " + data.analysis });
+        })
+        .catch(error => {
+          console.error("Error uploading image:", error);
+        });
+      }
+      
+      // Clear input and preview
+      messageInput.value = "";
+      clearImagePreview();
+    }
+
+    // Event listeners for send button and Enter key
+    document.getElementById('send-button').onclick = function () {
+      sendMessageAndImage();
+    };
+    document.getElementById('message-input').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        sendMessageAndImage();
+      }
+    });
+
+    // Append incoming messages
+    socket.on('message', function(data) {
+      var chatWindow = document.getElementById('chat-window');
+      var messageElement = document.createElement('div');
+      messageElement.classList.add('mb-2');
+      messageElement.innerHTML = "<strong>" + data.username + ":</strong> " + data.msg;
+      chatWindow.appendChild(messageElement);
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+    });
+
+    // Trigger hidden file input when image icon is clicked
+    document.getElementById('image-icon-button').onclick = function () {
+      document.getElementById('hidden-image-upload').click();
+    };
+
+    // Handle file selection and show image preview
+    document.getElementById('hidden-image-upload').addEventListener('change', function(event) {
+      var file = event.target.files[0];
+      if (!file) {
+        return;
+      }
+      selectedImageFile = file;
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        document.getElementById('image-preview').src = e.target.result;
+        document.getElementById('image-preview-section').style.display = "block";
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Helper to clear image preview and reset input
+    function clearImagePreview() {
+      document.getElementById('image-preview').src = "";
+      document.getElementById('image-preview-section').style.display = "none";
+      document.getElementById('hidden-image-upload').value = "";
+      selectedImageFile = null;
+    }
+  </script>
+{% endblock %}
