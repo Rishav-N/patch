@@ -17,3 +17,4 @@ dist/
 patch-40246-firebase-adminsdk-fbsvc-76101ed4f9.json
 
 .envfirebase_key.json
+.env
