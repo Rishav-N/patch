@@ -1,6 +1,4 @@
 # Deep Learning & Image Processing
-torch>=1.8.0
-torchvision>=0.9.0
 Pillow>=8.0.0
 
 # Inference SDK (ensure this package is available in your source)
