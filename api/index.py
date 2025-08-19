@@ -42,10 +42,10 @@ rf_client = InferenceHTTPClient(
 )
 
 # --- Blueprints ---
-from auth import auth_bp
-from tenant import tenant_bp
-from landlord import landlord_bp
-from profilepage import profile_bp
+from .auth import auth_bp
+from .tenant import tenant_bp
+from .landlord import landlord_bp
+from .profilepage import profile_bp
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(tenant_bp)
