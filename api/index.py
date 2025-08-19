@@ -1,42 +1,47 @@
-# api/index.py
-import os, sys, json, tempfile, datetime
+import os
+import sys
+import json
+import datetime
+import tempfile
+
+from google import genai
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request, session, redirect, url_for
+from flask_socketio import SocketIO, join_room, emit
 import firebase_admin
 from firebase_admin import credentials, firestore
 from inference_sdk import InferenceHTTPClient
-from google import genai
 
 # Make parent folder importable (so blueprints at repo root work when this file is under /api)
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-# ---- Secrets & clients ----
 load_dotenv()
 
-# Firebase Admin: read service account JSON from ENV (DO NOT use a file path on Vercel)
+# --- Firebase Admin ---
 sa_json = os.environ["FIREBASE_SERVICE_ACCOUNT_JSON"]
 cred = credentials.Certificate(json.loads(sa_json))
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
-# Gemini
+# --- Env & Gemini ---
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-# Flask
+# --- Flask / Socket.IO ---
 app = Flask(
     __name__,
     static_folder="../static",          # serve static from repo /static
-    template_folder="../templates"      # in case your blueprints render templates
+    template_folder="../templates"      # serve templates from repo /templates
 )
 app.config["SECRET_KEY"] = os.getenv("FLASK_SECRET_KEY", "change-me-in-env")
+socketio = SocketIO(app)
 
-# Roboflow (using environment variable)
+# --- Roboflow ---
 rf_client = InferenceHTTPClient(
     api_url="https://serverless.roboflow.com",
-    api_key=os.getenv("ROBOFLOW_API_KEY") # fallback to hardcoded key for development
+    api_key=os.getenv("ROBOFLOW_API_KEY"),
 )
 
-# ---- Blueprints (must exist at repo root): auth.py, tenant.py, landlord.py, profilepage.py ----
+# --- Blueprints ---
 from auth import auth_bp
 from tenant import tenant_bp
 from landlord import landlord_bp
@@ -70,16 +75,17 @@ def get_ai_advice_from_label(user, state, label):
             f"- Mention relevant state-specific tenant rights and repair laws (for {state})\n"
             f"- Formally demand that the landlord fixes the issue\n"
             f"- Specify a reasonable time frame for repair (e.g., 7 days)\n"
-            f"- Clearly state possible legal consequences (withholding rent, small claims court, health dept.)\n"
+            f"- Clearly state possible legal consequences (such as withholding rent, "
+            f"  small claims court, health department complaints) if the landlord fails to act\n"
             f"- Be written in a formal, professional tone\n"
             f"- Assume the tenant wants to stay polite but firm\n\n"
             f"Output the complete legal letter ready to be copied and sent."
         )
         response = client.models.generate_content(
             model="gemini-2.0-flash",
-            contents=[{"text": prompt}]
+            contents=[{"text": prompt}],
         )
-        return (getattr(response, "text", None) or "").strip()
+        return response.text.strip()
     except Exception as e:
         print(f"Gemini API error: {e}")
         return "Unable to generate advice at the moment."
@@ -89,17 +95,19 @@ def get_ai_days_from_label(state, label):
     try:
         prompt = (
             "Act as a legal expert specializing in housing and tenant rights. "
-            "Determine the statutory period—the number of days a landlord has to fix an issue "
-            "before a tenant can file a legal claim—based on state law.\n"
-            f"State: {state}\nIssue: {label}\n"
-            "Provide ONLY one integer (days)."
+            "I need you to determine the statutory period—the number of days a landlord has to fix an issue "
+            "in a rented living space before a tenant can file a legal claim—based on state law."
+            f"State: {state} Issue: {label}"
+            "Please provide: "
+            "1. The specific number of days (or the range of days) the law grants for the landlord "
+            "to address this issue before a legal claim can be filed."
+            "Output the answer AS ONE INTEGER NOTHING MORE NOTHING LESS"
         )
         response = client.models.generate_content(
             model="gemini-2.0-flash",
-            contents=[{"text": prompt}]
+            contents=[{"text": prompt}],
         )
-        value = (getattr(response, "text", None) or "").strip()
-        return int(value)
+        return int(response.text.strip())
     except Exception as e:
         print(f"Gemini API error: {e}")
         return 7  # safe default
@@ -107,7 +115,7 @@ def get_ai_days_from_label(state, label):
 
 @app.route("/upload_image", methods=["POST"])
 def upload_image():
-    chat_id = request.args.get("chat_id")  # currently unused but kept for compatibility
+    chat_id = request.args.get("chat_id")
 
     if "file" not in request.files:
         return jsonify({"success": False, "error": "No file uploaded"})
@@ -140,12 +148,15 @@ def upload_image():
 @app.route("/addIssue", methods=["POST"])
 def add_issue():
     """
-    Expects JSON with 'label'. Reads user uid from session, fetches state from Firestore,
-    generates AI advice + days, and stores an issue doc.
+    Expects a JSON payload with a key 'label'. Retrieves the current user's uid from the session,
+    fetches additional user details (e.g. state) from Firestore, and uses the data along with the label
+    to generate legal advice using get_ai_advice_from_label. The resulting advice is stored with the
+    issue along with tenant and status.
     """
     try:
         data = request.get_json(force=True)
         label = data.get("label")
+
         if not label:
             return jsonify({"success": False, "error": "Missing 'label' field"}), 400
 
@@ -160,6 +171,7 @@ def add_issue():
         user_data = user_doc.to_dict()
         state = user_data.get("state")
         username = user_data.get("username", current_user)
+
         if not state:
             return jsonify({"success": False, "error": "User state not found"}), 400
 
@@ -174,9 +186,11 @@ def add_issue():
             "days": num_days,
             "created_at": firestore.SERVER_TIMESTAMP,
         }
+
         db.collection("issues").add(issue_data)
 
         return jsonify({"success": True, "label": label, "tenant": current_user}), 200
+
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
@@ -184,14 +198,9 @@ def add_issue():
 @app.route("/load_chat/<chat_id>")
 def load_chat(chat_id):
     try:
-        messages_ref = (
-            db.collection("chats")
-              .document(chat_id)
-              .collection("messages")
-        )
+        messages_ref = db.collection("chats").document(chat_id).collection("messages")
         messages_query = (
-            messages_ref
-            .order_by("timestamp", direction=firestore.Query.DESCENDING)
+            messages_ref.order_by("timestamp", direction=firestore.Query.DESCENDING)
             .limit(10)
             .stream()
         )
@@ -202,9 +211,55 @@ def load_chat(chat_id):
         return jsonify({"messages": [], "error": str(e)})
 
 
-# No Socket.IO in serverless (Vercel Python) — use HTTP endpoints + Firestore listeners on the client.
+@socketio.on("join_chat")
+def join_chat(data):
+    chat_id = data.get("chat_id")
+    join_room(chat_id)
+    emit(
+        "chat_message",
+        {"sender": "System", "message": f"Joined chat room: {chat_id}", "chat_id": chat_id},
+        room=chat_id,
+    )
 
 
-# Local dev convenience (ignored by Vercel)
+@socketio.on("send_chat_message")
+def handle_send_chat_message(data):
+    chat_id = data.get("chat_id")
+    sender = data.get("sender")
+    message = data.get("message")
+    msg_type = data.get("type", "text")
+
+    live_timestamp = datetime.datetime.utcnow().isoformat()
+
+    live_message_data = {
+        "sender": sender,
+        "message": message,
+        "type": msg_type,
+        "timestamp": live_timestamp,
+        "chat_id": chat_id,
+    }
+
+    store_message_data = {
+        "sender": sender,
+        "message": message,
+        "type": msg_type,
+        "timestamp": firestore.SERVER_TIMESTAMP,
+        "chat_id": chat_id,
+    }
+
+    db.collection("chats").document(chat_id).collection("messages").add(store_message_data)
+    emit("chat_message", live_message_data, room=chat_id)
+    enforce_message_limit(chat_id)
+
+
+def enforce_message_limit(chat_id, limit=10):
+    messages_ref = db.collection("chats").document(chat_id).collection("messages")
+    messages = list(messages_ref.order_by("timestamp").stream())
+    if len(messages) > limit:
+        num_to_delete = len(messages) - limit
+        for i in range(num_to_delete):
+            messages[i].reference.delete()
+
+
 if __name__ == "__main__":
-    app.run(port=5000, debug=True)
+    socketio.run(app, debug=True)

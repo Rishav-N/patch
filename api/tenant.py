@@ -12,7 +12,7 @@ db = firestore.client()
 
 rf_client = InferenceHTTPClient(
     api_url="https://detect.roboflow.com",
-    api_key=os.getenv("ROBOFLOW_API_KEY")
+    api_key=os.getenv("ROBOFLOW_API_KEY"),
 )
 
 @tenant_bp.route('/tenant/dashboard')
