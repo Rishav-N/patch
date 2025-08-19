@@ -26,7 +26,7 @@ def tenant_dashboard():
     requests_query = get_db().collection("requests") \
         .where("tenant_email", "==", tenant_email) \
         .where("status", "==", "pending") \
-        .stream()
+        .get()
     requests_list = []
     for doc in requests_query:
         req = doc.to_dict()
@@ -35,7 +35,7 @@ def tenant_dashboard():
     
     issues_query = get_db().collection("issues") \
         .where("tenant", "==", tenant_uid) \
-        .stream()
+        .get()
     issues_list = []
     for doc in issues_query:
         issue = doc.to_dict()
@@ -152,3 +152,4 @@ def accept_request(request_id):
         return redirect(url_for("tenant.tenant_dashboard"))
     flash("Unauthorized access", "danger")
     return redirect(url_for("auth.login"))
+
