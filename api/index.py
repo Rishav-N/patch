@@ -39,7 +39,9 @@ app.config["SECRET_KEY"] = os.getenv("FLASK_SECRET_KEY", "change-me-in-env")
 socketio = SocketIO(
     app,
     async_mode="eventlet",
-    cors_allowed_origins=os.getenv("SOCKETIO_CORS", "*").split(",")
+    cors_allowed_origins=[o.strip() for o in os.getenv("SOCKETIO_CORS", "*").split(",") if o.strip()],
+    ping_interval=25,   # seconds between client pings
+    ping_timeout=60     # time to wait for pong before disconnect
 )
 
 # --- Roboflow ---
