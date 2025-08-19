@@ -1,18 +1,20 @@
 import eventlet
-eventlet.monkey_patch()
+eventlet.monkey_patch()  # MUST be first
 
 import os
 import sys
 import json
 import datetime
 import tempfile
+import time
 
 from google import genai
 from dotenv import load_dotenv
-from flask import Flask, jsonify, request, session, redirect, url_for
+from flask import Flask, jsonify, request, session, redirect, url_for, g
 from flask_socketio import SocketIO, join_room, emit
 import firebase_admin
-from firebase_admin import credentials, firestore
+from firebase_admin import credentials, firestore as firestore_admin
+# If you keep using inference_sdk, leave this import; otherwise you can remove and use requests instead.
 from inference_sdk import InferenceHTTPClient
 
 # Make parent folder importable (so blueprints at repo root work when this file is under /api)
@@ -20,11 +22,26 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 load_dotenv()
 
-# --- Firebase Admin ---
+# --- Firebase Admin / Firestore (REST transport to avoid gRPC stalls in eventlet) ---
 sa_json = os.environ["FIREBASE_SERVICE_ACCOUNT_JSON"]
-cred = credentials.Certificate(json.loads(sa_json))
+sa = json.loads(sa_json)
+cred = credentials.Certificate(sa)
 firebase_admin.initialize_app(cred)
-db = firestore.client()
+
+# Prefer REST transport on hosts where gRPC can hang with eventlet
+# You can control this via env: FIRESTORE_TRANSPORT=rest|grpc (default rest)
+USE_REST = os.getenv("FIRESTORE_TRANSPORT", "rest").lower() == "rest"
+if USE_REST:
+    from google.cloud import firestore_v1
+    db = firestore_v1.Client(
+        project=sa["project_id"],
+        credentials=cred.get_credential(),
+        transport="rest",
+    )
+    
+else:
+    # gRPC client (not recommended on Render with eventlet)
+    db = firestore_admin.client()
 
 # --- Env & Gemini ---
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
@@ -35,6 +52,7 @@ app = Flask(
     static_folder="../static",          # serve static from repo /static
     template_folder="../templates"      # serve templates from repo /templates
 )
+app.config["DB"] = db
 app.config["SECRET_KEY"] = os.getenv("FLASK_SECRET_KEY", "change-me-in-env")
 socketio = SocketIO(
     app,
@@ -43,6 +61,25 @@ socketio = SocketIO(
     ping_interval=25,   # seconds between client pings
     ping_timeout=60     # time to wait for pong before disconnect
 )
+
+# --- simple health check ---
+@app.get("/_ping")
+def _ping():
+    return "ok", 200
+
+# --- request timing (helps debug stalls) ---
+@app.before_request
+def _start_timer():
+    g._t0 = time.perf_counter()
+
+@app.after_request
+def _log_timing(resp):
+    try:
+        dt = (time.perf_counter() - g._t0) * 1000
+        print(f"{request.method} {request.path} -> {resp.status_code} in {dt:.1f}ms")
+    except Exception:
+        pass
+    return resp
 
 # --- Roboflow ---
 rf_client = InferenceHTTPClient(
@@ -193,7 +230,7 @@ def add_issue():
             "status": "pending",
             "ai_advice": ai_advice,
             "days": num_days,
-            "created_at": firestore.SERVER_TIMESTAMP,
+            "created_at": firestore_admin.SERVER_TIMESTAMP,  # keep SERVER_TIMESTAMP from admin SDK
         }
 
         db.collection("issues").add(issue_data)
@@ -209,9 +246,9 @@ def load_chat(chat_id):
     try:
         messages_ref = db.collection("chats").document(chat_id).collection("messages")
         messages_query = (
-            messages_ref.order_by("timestamp", direction=firestore.Query.DESCENDING)
+            messages_ref.order_by("timestamp", direction=firestore_admin.Query.DESCENDING)
             .limit(10)
-            .stream()
+            .get()   # WAS: .stream() -> change to .get() for eager fetch under eventlet
         )
         messages = [doc.to_dict() for doc in messages_query]
         messages.reverse()
@@ -252,7 +289,7 @@ def handle_send_chat_message(data):
         "sender": sender,
         "message": message,
         "type": msg_type,
-        "timestamp": firestore.SERVER_TIMESTAMP,
+        "timestamp": firestore_admin.SERVER_TIMESTAMP,
         "chat_id": chat_id,
     }
 
@@ -263,7 +300,7 @@ def handle_send_chat_message(data):
 
 def enforce_message_limit(chat_id, limit=10):
     messages_ref = db.collection("chats").document(chat_id).collection("messages")
-    messages = list(messages_ref.order_by("timestamp").stream())
+    messages = list(messages_ref.order_by("timestamp").get())  # WAS: .stream()
     if len(messages) > limit:
         num_to_delete = len(messages) - limit
         for i in range(num_to_delete):
