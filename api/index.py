@@ -30,10 +30,10 @@ app = Flask(
 )
 app.config["SECRET_KEY"] = os.getenv("FLASK_SECRET_KEY", "change-me-in-env")
 
-# Roboflow (using hardcoded key for now)
+# Roboflow (using environment variable)
 rf_client = InferenceHTTPClient(
     api_url="https://serverless.roboflow.com",
-    api_key="OMzWXPHBONpUpBxpEqDG"  # TODO: move to environment variable
+    api_key=os.getenv("ROBOFLOW_API_KEY") # fallback to hardcoded key for development
 )
 
 # ---- Blueprints (must exist at repo root): auth.py, tenant.py, landlord.py, profilepage.py ----
