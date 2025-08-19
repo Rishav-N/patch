@@ -28,20 +28,8 @@ sa = json.loads(sa_json)
 cred = credentials.Certificate(sa)
 firebase_admin.initialize_app(cred)
 
-# Prefer REST transport on hosts where gRPC can hang with eventlet
-# You can control this via env: FIRESTORE_TRANSPORT=rest|grpc (default rest)
-USE_REST = os.getenv("FIRESTORE_TRANSPORT", "rest").lower() == "rest"
-if USE_REST:
-    from google.cloud import firestore_v1
-    db = firestore_v1.Client(
-        project=sa["project_id"],
-        credentials=cred.get_credential(),
-        transport="rest",
-    )
-    
-else:
-    # gRPC client (not recommended on Render with eventlet)
-    db = firestore_admin.client()
+
+db = firestore_admin.client()
 
 # --- Env & Gemini ---
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
