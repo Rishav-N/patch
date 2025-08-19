@@ -1,3 +1,6 @@
+import eventlet
+eventlet.monkey_patch()
+
 import os
 import sys
 import json
@@ -33,7 +36,11 @@ app = Flask(
     template_folder="../templates"      # serve templates from repo /templates
 )
 app.config["SECRET_KEY"] = os.getenv("FLASK_SECRET_KEY", "change-me-in-env")
-socketio = SocketIO(app)
+socketio = SocketIO(
+    app,
+    async_mode="eventlet",
+    cors_allowed_origins=os.getenv("SOCKETIO_CORS", "*").split(",")
+)
 
 # --- Roboflow ---
 rf_client = InferenceHTTPClient(
